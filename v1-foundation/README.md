@@ -219,29 +219,20 @@ Every design claim in this README is backed by either a config file or a verific
 ## Repository Structure
 
 ```
-.
-├── README.md
+v1-foundation/
 ├── configs/
-│   ├── README.md
-│   ├── core-l3.txt
-│   ├── core-acls.txt
-│   ├── access-sw1.txt
-│   ├── access-sw2.txt
-│   ├── access-sw3.txt
-│   └── fortigate.txt
+│   ├── infrastructure/       # Core and Access switches
+│   └── security/             # Firewall & ACL configs
 ├── verification/
-│   ├── README.md
-│   ├── acl-core-show-access-lists.png
-│   ├── e2e-guest-to-internal-deny.png
-│   ├── e2e-internal-to-internet-ping.png
-│   ├── fw-policy-table.png
-│   ├── fw-routing-table.png
-|   ├── l2-access-sw1-show-interfaces-trunk.png
-│   ├── l2-core-show-vlan-brief.png
-│   └── topology.png
-├── firewall-policy.md
-├── lessons-learned.md
-└── troubleshooting.md
+│   ├── l2-switching/         # Trunking, VLAN briefs
+│   ├── l3-routing/           # FW routing table, SVI status
+│   └── security-testing/     # Pings, ACL matches, FW policies
+│   └── topology/             # Main network diagram
+├── docs/                     # .md files
+│   ├── firewall-policy.md
+│   ├── lessons-learned.md
+│   └── troubleshooting.md
+└── README.md
 ```
 
 ---
