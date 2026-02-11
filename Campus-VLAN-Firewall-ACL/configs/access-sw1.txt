@@ -1,0 +1,41 @@
+! Access Switch 1
+! Role: Mixed users (Management + Guests) 
+! Phase: L2 baseline (no routing)
+! Verified: VLAN & trunk validation complete
+!
+interface GigabitEthernet0/0
+ description TRUNK_TO_CORE
+ switchport trunk allowed vlan 20,40
+ switchport trunk encapsulation dot1q
+ switchport mode trunk
+ negotiation auto
+!         
+interface GigabitEthernet0/1
+ description MGMT-PC1
+ switchport access vlan 20
+ switchport mode access
+ negotiation auto
+ spanning-tree portfast edge
+!         
+interface GigabitEthernet0/2
+ description GUEST-PC1
+ switchport access vlan 40
+ switchport mode access
+ negotiation auto
+ spanning-tree portfast edge
+!         
+interface GigabitEthernet0/3
+ description MGMNT-PC2
+ switchport access vlan 20
+ switchport mode access
+ negotiation auto
+ spanning-tree portfast edge
+!         
+interface GigabitEthernet1/0
+ description GUEST-PC2
+ switchport access vlan 40
+ switchport mode access
+ negotiation auto
+ spanning-tree portfast edge
+!         
+

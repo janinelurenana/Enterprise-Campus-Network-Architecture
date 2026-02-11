@@ -1,0 +1,102 @@
+# --------------------------------------------------
+# FortiGate Configuration
+# port1 → WAN (Cloud)
+# port2 → Internal (Core L3)
+# --------------------------------------------------
+
+config system interface
+    edit "port1"
+        set alias "ZONE_WAN"
+        set mode dhcp
+        set allowaccess ping
+    next
+    edit "port2"
+        set alias "CORE_INSIDE"
+        set ip 10.10.255.2 255.255.255.252
+        set allowaccess ping https ssh
+    next
+end
+
+config system zone
+    edit "ZONE_INTERNAL"
+        set interface "port2"
+    next
+    edit "ZONE_WAN"
+        set interface "port1"
+    next
+end
+
+config router static
+    edit 1
+        set dst 10.10.0.0 255.255.0.0
+        set gateway 10.10.255.1
+        set device "port2"
+    next
+end
+
+config firewall policy
+    edit 5
+        set name "GUEST_to_INTERNAL_DENY"
+        set srcintf "ZONE_INTERNAL"
+        set dstintf "ZONE_INTERNAL"
+        set srcaddr "GUEST_SUBNET"
+        set dstaddr "IT_SUBNET" "MGMT_SUBNET" "HR_SUBNET"
+        set service "ALL"
+        set schedule "always"
+        set action deny
+        set logtraffic all
+    next
+    
+    edit 1
+        set name "IT_to_WAN"
+        set srcintf "ZONE_INTERNAL"
+        set dstintf "ZONE_WAN"
+        set srcaddr "IT_SUBNET"
+        set dstaddr "all"
+        set service "ALL"
+        set schedule "always"
+        set action accept
+        set nat enable
+        set logtraffic all
+    next
+
+    edit 2
+        set name "MGMT_to_WAN"
+        set srcintf "ZONE_INTERNAL"
+        set dstintf "ZONE_WAN"
+        set srcaddr "MGMT_SUBNET"
+        set dstaddr "all"
+        set service "HTTP" "HTTPS" "DNS" "PING"
+        set schedule "always"
+        set action accept
+        set nat enable
+        set logtraffic all
+    next
+
+    edit 3
+        set name "HR_to_WAN"
+        set srcintf "ZONE_INTERNAL"
+        set dstintf "ZONE_WAN"
+        set srcaddr "HR_SUBNET"
+        set dstaddr "all"
+        set service "HTTP" "HTTPS" "DNS" "PING"
+        set schedule "always"
+        set action accept
+        set nat enable
+        set logtraffic all
+    next
+
+    edit 4
+        set name "GUEST_to_WAN"
+        set srcintf "ZONE_INTERNAL"
+        set dstintf "ZONE_WAN"
+        set srcaddr "GUEST_SUBNET"
+        set dstaddr "all"
+        set service "HTTP" "HTTPS" "DNS" "PING"
+        set schedule "always"
+        set action accept
+        set nat enable
+        set logtraffic all
+    next
+end
+
