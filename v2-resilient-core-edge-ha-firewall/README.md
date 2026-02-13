@@ -21,6 +21,8 @@ All redundancy mechanisms were validated through controlled failure simulations.
 
 ## Architectural Model
 
+![Network Topology](./topology/topology.png)
+
 ### Collapsed Core/Distribution Layer
 
 The design follows a hierarchical campus model using a **collapsed Core/Distribution layer**, where:
