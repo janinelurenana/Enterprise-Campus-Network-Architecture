@@ -1,0 +1,42 @@
+Version:         FortiGate-VM64-KVM v7.0.9,build0444
+Serial-Number:   FGVMEVNLIKHEMG61
+Resources:       1 vCPU / 2GB RAM
+Current HA mode: a-p, secondary
+HA Priority:     100 (Lower than Primary)
+Sync Status:     Check-sum Matched with FG-1
+
+config system ha
+    set group-id 10
+    set group-name "FG-CLUSTER"
+    set mode a-p
+    set hbdev "port8" 50 
+    set hb-lost-threshold 8
+    set arps 10
+    set session-pickup enable
+    set link-failed-signal enable
+    set override disable
+    set priority 100
+    set monitor "port2" "port5" "port3" "port4" 
+end
+
+
+HA information
+Statistics
+	traffic.local = s:0 p:233 b:45173
+	traffic.total = s:0 p:250 b:46358
+	activity.ha_id_changes = 1
+	activity.fdb  = c:0 q:0
+
+Model=80001, Mode=2 Group=10 Debug=0
+nvcluster=1, ses_pickup=1, delay=0
+
+[Debug_Zone HA information]
+HA group member information: is_manage_primary=0.
+FGVMEVNLIKHEMG61:    Secondary, serialno_prio=1, usr_priority=100, hostname=FortiGate-VM64-KVM
+FGVMEV_JBNLZY4B0:      Primary, serialno_prio=0, usr_priority=200, hostname=FortiGate-VM64-KVM
+
+[Kernel HA information]
+vcluster 1, state=standby, primary_ip=169.254.0.1, primary_id=0:
+FGVMEVNLIKHEMG61:    Secondary, ha_prio/o_ha_prio=1/1
+FGVMEV_JBNLZY4B0:      Primary, ha_prio/o_ha_prio=0/0
+

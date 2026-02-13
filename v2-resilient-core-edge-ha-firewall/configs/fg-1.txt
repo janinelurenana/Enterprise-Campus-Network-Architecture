@@ -1,0 +1,239 @@
+Version:       FortiGate-VM64-KVM v7.0.9,build0444
+Serial-Number: FGVMEV_JBNLZY4B0
+Resources:     1 vCPU / 2GB RAM
+HA State:      Active-Passive (Primary)
+HA Priority:   100 (Higher than Secondary)
+Sync Status:   Check-sum Matched with FG-2
+
+config system interface
+edit "port1"
+        set vdom "root"
+        set mode dhcp
+        set distance 10
+        set allowaccess ping https ssh
+        set type physical
+        set alias "WAN-1"
+        set snmp-index 1
+    next
+edit "port2"
+        set vdom "root"
+        set ip 10.10.255.2 255.255.255.252
+        set allowaccess ping https ssh
+        set type physical
+        set description "Link to Core-1 G0/0"
+        set snmp-index 2
+    next
+    edit "port3"
+        set vdom "root"
+        set ip 10.10.255.10 255.255.255.252
+        set allowaccess ping
+        set type physical
+        set description "Link to Core-2 G2/0"
+        set snmp-index 3
+    next
+    edit "port4"
+        set vdom "root"
+        set ip 10.10.255.6 255.255.255.252
+        set allowaccess ping
+        set type physical
+        set snmp-index 4
+    next
+    edit "port5"
+        set vdom "root"
+        set ip 10.10.255.14 255.255.255.252
+        set allowaccess ping https ssh
+        set type physical
+        set snmp-index 5
+        
+
+config system ha
+    set group-id 10
+    set group-name "FG-CLUSTER"
+    set mode a-p
+    set hbdev "port8" 50 
+    set hb-lost-threshold 8
+    set arps 10
+    set session-pickup enable
+    set link-failed-signal enable
+    set override enable
+    set priority 200
+    set monitor "port2" "port5" "port3" "port4" 
+end
+
+config system zone
+    edit "ZONE_INTERNAL"
+        set interface "port2" "port3" "port4" "port5"
+    next
+    edit "ZONE_WAN"
+        set interface "port1"
+    next
+end
+
+config router static
+    edit 1
+        set dst 10.10.0.0 255.255.0.0
+        set gateway 10.10.255.1
+        set device "port2"
+        set comment "FG1 to Core-1"
+    next
+    edit 2
+        set dst 10.10.0.0 255.255.0.0
+        set gateway 10.10.255.13
+        set priority 20
+        set device "port5"
+        set comment "Backup Path to Core-2"
+    next
+    edit 3
+        set dst 10.10.0.0 255.255.0.0
+        set gateway 10.10.255.5
+        set device "port4"
+        set comment "FG2 to Core-2"
+    next
+    edit 4
+        set dst 10.10.0.0 255.255.0.0
+        set gateway 10.10.255.9
+        set priority 20
+        set device "port3"
+        set comment "FG2 to Core-1 (Backup)"
+    next
+end
+
+
+config firewall policy
+    edit 6
+        set name "VPC_to_FG"
+        set uuid c6c77eee-0804-51f1-3176-15ba08a7fc16
+        set srcintf "ZONE_INTERNAL"
+        set dstintf "ZONE_INTERNAL"
+        set action accept
+        set srcaddr "all"
+        set dstaddr "all"
+        set schedule "always"
+        set service "ALL"
+        set nat enable
+    next
+    edit 5
+        set name "GUEST_to_INTERNAL_DENY"
+        set uuid f1b25fcc-0109-51f1-fdbb-482a681faf40
+        set srcintf "ZONE_INTERNAL"
+        set dstintf "ZONE_INTERNAL"
+        set srcaddr "GUEST_SUBNET"
+        set dstaddr "IT_SUBNET" "MGMT_SUBNET" "HR_SUBNET"
+        set schedule "always"
+        set service "ALL"
+        set logtraffic all
+    next
+    edit 1
+        set name "IT_to_WAN"
+        set uuid 3cc68f30-00ef-51f1-8d52-458ec0860593
+        set srcintf "ZONE_INTERNAL"
+        set dstintf "ZONE_WAN"
+        set action accept
+        set srcaddr "IT_SUBNET"
+        set dstaddr "all"
+        set schedule "always"
+        set service "ALL"
+        set logtraffic all
+        set nat enable
+    next
+    edit 2
+        set name "MGMT_to_WAN"
+        set uuid 95679df4-00f0-51f1-225d-d75890f602b7
+        set srcintf "ZONE_INTERNAL"
+        set dstintf "ZONE_WAN"
+        set action accept
+        set srcaddr "MGMT_SUBNET"
+        set dstaddr "all"
+        set schedule "always"
+        set service "HTTP" "HTTPS" "DNS" "PING"
+        set logtraffic all
+        set nat enable
+    next
+    edit 3
+        set name "HR_to_WAN"
+        set uuid ed729ba2-00f0-51f1-4953-0478a1cd38ab
+        set srcintf "ZONE_INTERNAL"
+        set dstintf "ZONE_WAN"
+        set action accept
+        set srcaddr "HR_SUBNET"
+        set dstaddr "all"
+        set schedule "always"
+        set service "HTTP" "HTTPS" "DNS" "PING"
+        set logtraffic all
+        set nat enable
+    next
+    edit 4
+        set name "GUEST_to_WAN"
+        set uuid c2753b6c-0109-51f1-1cec-740140f71dba
+        set srcintf "ZONE_INTERNAL"
+        set dstintf "ZONE_WAN"
+        set action accept
+        set srcaddr "GUEST_SUBNET"
+        set dstaddr "all"
+        set schedule "always"
+        set service "HTTP" "HTTPS" "DNS" "PING"
+        set logtraffic all
+        set nat enable
+    next
+    edit 10
+        set name "Cores_to_WAN"
+        set uuid 5e6865f8-08bc-51f1-80a1-a4182bb90271
+        set srcintf "ZONE_INTERNAL"
+        set dstintf "ZONE_WAN"
+        set action accept
+        set srcaddr "all"
+        set dstaddr "all"
+        set schedule "always"
+        set service "ALL"
+        set nat enable
+    next
+end
+
+config system link-monitor
+    edit "Check-Core-1"
+        set srcintf "port2"
+        set server "10.10.255.1"
+        set gateway-ip 10.10.255.1
+        set failtime 3
+    next
+    edit "Check-Core-2-Cross"
+        set srcintf "port5"
+        set server "10.10.255.13"
+        set gateway-ip 10.10.255.13
+        set failtime 3
+    next
+    edit "Check-Core-2"
+        set srcintf "port4"
+        set server "10.10.255.5"
+        set gateway-ip 10.10.255.5
+    next
+    edit "Check-Core-1-Cross"
+        set srcintf "port3"
+        set server "10.10.255.9"
+        set gateway-ip 10.10.255.9
+    next
+end
+
+HA information
+Statistics
+	traffic.local = s:0 p:36483 b:6213192
+	traffic.total = s:0 p:36493 b:6213800
+	activity.ha_id_changes = 2
+	activity.fdb  = c:0 q:0
+
+Model=80001, Mode=2 Group=10 Debug=0
+nvcluster=1, ses_pickup=1, delay=0
+
+[Debug_Zone HA information]
+HA group member information: is_manage_primary=1.
+FGVMEV_JBNLZY4B0:      Primary, serialno_prio=0, usr_priority=200, hostname=FortiGate-VM64-KVM
+FGVMEVNLIKHEMG61:    Secondary, serialno_prio=1, usr_priority=100, hostname=FortiGate-VM64-KVM
+
+[Kernel HA information]
+vcluster 1, state=work, primary_ip=169.254.0.1, primary_id=0:
+FGVMEV_JBNLZY4B0:      Primary, ha_prio/o_ha_prio=0/0
+FGVMEVNLIKHEMG61:    Secondary, ha_prio/o_ha_prio=1/1
+
+
+
+
