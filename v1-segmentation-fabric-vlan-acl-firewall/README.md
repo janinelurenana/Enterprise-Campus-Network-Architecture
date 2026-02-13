@@ -1,29 +1,27 @@
 # Campus Network with VLAN Segmentation and Firewall Policy
 
-## Overview
+## Executive Summary
 
-This project implements a **single-building campus network** in GNS3 with deliberate Layer 2 segmentation, controlled Layer 3 **inter-VLAN routing**, and a FortiGate firewall acting as the north–south security boundary.
+This lab implements a **single-building enterprise campus network** with:
 
-The design prioritizes **clarity, least privilege, and operational realism** over unnecessary complexity. Each device has a clearly defined role, and security is enforced at the appropriate plane:
+* Layer 2 VLAN segmentation
+* Centralized Layer 3 inter-VLAN routing
+* East–west access control via ACLs
+* North–south stateful inspection via FortiGate
 
-* **Core L3 switch** → inter-VLAN routing and east–west access control (ACLs)
-* **FortiGate firewall** → north–south policy enforcement, NAT, and untrusted traffic isolation
+The design enforces **least privilege, clear role separation, and predictable traffic flow**.
 
-This repository is structured so that a reviewer can understand the intent, design decisions, and verification steps **without additional explanation**.
+This is a foundational architecture intended to scale into a high-availability design in V2.
 
 ---
 
-## Design Constraints
+## Architectural Goals
 
-To keep the lab realistic and focused, the following constraints were enforced:
-
-* Single building campus
-* One core Layer 3 switch
-* Multiple Layer 2 access switches
-* FortiGate as the only security boundary
-* No dynamic routing protocols
-
-These constraints prevent scope creep and mirror small-to-mid scale enterprise environments.
+* Enforce least privilege between departments
+* Prevent lateral movement at the distribution layer
+* Centralize north–south inspection
+* Keep access layer free of routing or policy logic
+* Maintain deterministic traffic paths
 
 ---
 
@@ -39,8 +37,11 @@ These constraints prevent scope creep and mirror small-to-mid scale enterprise e
 
 ## Topology
 
-![Network Topology](./verification/topology.png)
+![Network Topology](./topology/topology.png)
 
+The core switch acts as the routing and internal policy enforcement point.
+The firewall enforces perimeter security and NAT.
+Access switches remain strictly Layer 2 devices.
 
 ---
 
@@ -62,6 +63,8 @@ These constraints prevent scope creep and mirror small-to-mid scale enterprise e
 |   30 | HR         | 10.10.30.0/24 | 10.10.30.1 | Sensitive Data   |
 |   40 | Guest      | 10.10.40.0/24 | 10.10.40.1 | Untrusted Access |
 
+Addressing follows a predictable schema (10.10.<VLAN>.0/24) to improve operational clarity and troubleshooting speed.
+
 ### Core ↔ Firewall Transit
 
 | Link | Subnet         | Core IP     | Firewall IP |
@@ -72,10 +75,6 @@ These constraints prevent scope creep and mirror small-to-mid scale enterprise e
 
 ## Layer 2 Design (Access Layer)
 
-* Access switches operate strictly at Layer 2
-* VLAN pruning is enforced on trunks
-* No routing or policy logic exists on access switches
-
 **Trunk VLAN assignments:**
 
 | Switch | Allowed VLANs |
@@ -84,11 +83,11 @@ These constraints prevent scope creep and mirror small-to-mid scale enterprise e
 |    SW2 | 30            |
 |    SW3 | 10            |
 
-This layout ensures:
+* VLAN pruning reduces unnecessary broadcast propagation
 
-* Guest traffic never touches IT hardware
-* HR systems remain isolated
-* Trunks carry only what is required
+* Access layer remains policy-free to avoid configuration drift
+
+* Trunks carry only required VLANs
 
 ---
 
@@ -119,13 +118,13 @@ ACLs are **stateless**, so return traffic is explicitly permitted where required
 | HR                   | ❌  | ❌          | —  | ✅        |
 | Guest                | ❌  | ❌          | ❌  | ✅        |
 
-Default behavior is **deny**. Only explicit business needs are permitted.
+Default stance is **deny**. Inter-department communication requires explicit justification.
 
 ---
 
 ## Stealth Filtering (RFC 1812 Compliance)
 
-By default, when an ACL denies a packet, the switch sends an ICMP "Administratively Prohibited" message back to the source. While helpful for troubleshooting, this confirms the existence of a Layer 3 gateway and a security boundary to a potential attacker.
+ICMP unreachables are disabled on internal SVIs to reduce reconnaissance feedback from untrusted VLANs.
 
 * Implementation: The no ip unreachables command is applied to all internal SVIs, specifically VLAN 40 (Guest).
 
@@ -140,14 +139,11 @@ By default, when an ACL denies a packet, the switch sends an ICMP "Administrativ
 * `port1` → WAN / Cloud
 * `port2` → Internal (Core L3 switch)
 
-### Firewall Responsibilities
+### Perimeter Security Model
 
-* NAT for outbound traffic
-* Internet access control
-* Guest isolation
-* Stateful inspection
-
-Inter-VLAN routing is **not** performed on the firewall.
+* Firewall performs NAT
+* Firewall performs stateful inspection
+* Firewall does **NOT** perform inter-VLAN routing
 
 ---
 
@@ -169,7 +165,7 @@ Inter-VLAN routing is **not** performed on the firewall.
 10.10.0.0/16 → 10.10.255.1
 ```
 
-No dynamic routing is used.
+Dynamic routing is intentionally excluded to preserve architectural simplicity at this stage.
 
 ---
 
@@ -182,7 +178,7 @@ The network utilizes a hybrid DHCP approach to balance administrative control wi
 **Design Justification:** By delegating the Guest scope to the firewall and keeping internal scopes on the core switch, we maintain a clear "separation of concerns". The Core switch focuses on high-speed internal distribution, while the FortiGate handles the overhead of dynamic, untrusted endpoint management.
 
 ---
-## Packet Flow Summary
+## Packet Flow Validation
 
 ### Egress (Outbound):
 
@@ -202,58 +198,84 @@ The network utilizes a hybrid DHCP approach to balance administrative control wi
 
 ---
 
-## Verification
+## Validation & Proof
 
-Verification artifacts are stored in the [/verification](./verification) directory and include:
+### Validation confirms:
 
-* VLAN and trunk validation
-* Inter-VLAN routing tests
-* ACL enforcement proof
-* Firewall policy and routing screenshots
-* End-to-end connectivity checks
+* VLAN membership and trunk integrity
+* Correct SVI operation
+* ACL enforcement under permitted and denied scenarios
+* Successful NAT and stateful inspection
+* Guest VLAN isolation
 
-Every design claim in this README is backed by either a config file or a verification artifact.
+All validation artifacts are available under [/verification](./verification)
+
+---
+
+## Design Tradeoffs
+
+* Single core switch represents a single point of failure (addressed in V2)
+
+* Stateless ACLs require explicit return-path allowances
+
+* Static routing limits scalability
 
 ---
 
 ## Repository Structure
 
 ```
-v1-foundation/
+v1-segmentation-fabric-vlan-acl-firewall/
+|
+├── topology/
+│   └── topology.png
 ├── configs/
-│   ├── infrastructure/       # Core and Access switches
-│   └── security/             # Firewall & ACL configs
+│   ├── core/
+│   │   ├── core-l3.txt
+│   │   └── core-acls.txt
+│   ├── access/
+│   │   ├── access-sw1.txt
+│   │   ├── access-sw2.txt
+│   │   └── access-sw3.txt
+│   └── firewall/
+│       └── fortigate.txt
 ├── verification/
-│   ├── l2-switching/         # Trunking, VLAN briefs
-│   ├── l3-routing/           # FW routing table, SVI status
-│   └── security-testing/     # Pings, ACL matches, FW policies
-│   └── topology/             # Main network diagram
-├── docs/                     # .md files
+│   ├── l2/
+│   │   ├── show-vlan-brief.png
+│   │   └── show-interfaces-trunk.png
+│   ├── l3/
+│   │   ├── show-ip-route.png
+│   │   └── acl-core-show-access-lists.png
+│   ├── firewall/
+│   │   ├── fw-policy-table.png
+│   │   └── fw-routing-table.png
+│   └── e2e/
+│       ├── internal-to-internet-ping.png
+│       └── guest-to-internal-deny.png
+├── docs/
 │   ├── firewall-policy.md
-│   ├── lessons-learned.md
-│   └── troubleshooting.md
+│   ├── troubleshooting.md
+│   └── lessons-learned.md
 └── README.md
 ```
 
 ---
 
-## Key Takeaways
+## Lessons Learned
 
-* Segmentation without policy is meaningless
-* ACL order and direction matter
-* NAT success does not imply end-to-end connectivity
-* Firewalls are not a substitute for proper internal design
+* Segmentation without enforcement is cosmetic
+* ACL direction and order determine effective security
+* Firewall NAT success does not validate internal routing
+* Simplicity improves auditability
 
 ---
 
-## Expansion Path
+## Architectural Evolution (See v2)
 
-This design can scale without rebuild:
+This design evolves in V2 to include:
 
-* Add new VLANs or departments
-* Introduce additional access switches
-* Extend to a second building via routed links
-* Implement firewall HA
-
-The base architecture remains intact.
+* Dual core redundancy (HSRP)
+* High-availability firewall cluster
+* Failure testing validation
+* Path resiliency
 
