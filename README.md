@@ -1,81 +1,174 @@
 # Enterprise Campus Network Architecture
-**A Deep Dive into Resilient Infrastructure, Redundancy, and Scalable Design.**
+
+**Designing a Resilient, Segmented, and Scalable Enterprise Network**
 
 ---
 
 ## Project Overview
-This repository documents the end-to-end design and implementation of a modern Enterprise Campus Network. The project is structured as an **Evolutionary Roadmap**, simulating the real-world growth of a corporate environment. 
 
-The goal is to move beyond basic connectivity and solve for **Business Continuity**, **Security Segmentation**, and **Operational Efficiency**.
+This repository documents the staged design and implementation of a simulated Enterprise Campus Network.
+
+Rather than building a static lab, the project follows a structured evolution model — mirroring how real corporate networks mature over time:
+
+1. Establish a secure routed baseline
+2. Eliminate single points of failure
+3. Isolate and harden exposed services
+4. Scale across sites
+5. Introduce automation and operational visibility
+
+The objective is not just connectivity — but controlled growth, resilience, and measurable operational improvement.
 
 ---
 
-## The Architecture Roadmap
+## Architecture Roadmap
 
-### 🔹 [Phase 1: The Baseline Foundation](./v1-foundation)
-*Focus: Connectivity & Segmentation*
-* **Topology:** Layer 3 Core-Centric Design.
-* **Routing:** Inter-VLAN routing performed at the Core Layer via SVIs (Switch Virtual Interfaces), offloading routing tasks from the firewall.
-* **Security:** Implemented VLAN-based segmentation (Management, HR, Sales, Guest) with strict Access Control Lists (ACLs) applied at the Core.
-* **Key Achievement:** Established a secure, routed baseline with full documentation and IPAM (IP Address Management).
+### 🔹 Phase 1: Foundation – Segmentation & Core Routing
 
+`./v1-segmentation-fabric-vlan-acl`
 
+**Focus:** Establishing a secure, routed baseline
 
-### 🔹 [Phase 2: High Availability & Redundancy](./v2-high-availability) (In progress)
-*Focus: Eliminating Single Points of Failure*
-* **Core Redundancy:** Deployed **HSRP (Hot Standby Router Protocol)** for seamless gateway failover.
-* **Link Aggregation:** Implemented **LACP (802.3ad)** EtherChannels between Access and Core layers to double bandwidth and provide link-level resiliency.
-* **Firewall HA:** Configured an Active/Standby Firewall cluster to ensure perimeter security survives hardware failure.
-* **Key Achievement:** Reduced potential downtime from hours to sub-second failover.
+* **Topology:** Core-centric Layer 3 campus design
+* **Inter-VLAN Routing:** Performed at the Core via SVIs (firewall reserved for policy and NAT)
+* **Segmentation:** VLAN-based isolation (Management, HR, Sales, Guest)
+* **Access Control:** ACL enforcement at the Core for East-West traffic
+* **Documentation:** IP addressing plan, gateway design, verification tests
 
+**Outcome:**
+A stable, segmented network with defined trust boundaries and least-privilege enforcement.
 
+---
 
-### 🔹 [Phase 3: Service Delivery & DMZ](./v3-services-dmz) (Planned)
-*Focus: Internal Services & Perimeter Security*
-* **DMZ Implementation:** Isolated segment for public-facing assets (Nginx Web Servers).
-* **Infrastructure Services:** Migration of DHCP/DNS from network appliances to dedicated Linux nodes.
-* **Security Policies:** Fine-grained firewall inspection for East-West traffic between internal zones and the DMZ.
+### 🔹 Phase 2: High Availability & Redundancy
 
-### 🔹 [Phase 4: Scalability & Wide Area Networking (WAN)](./v4-wan-scalability) (Planned)
-*Focus: Multi-Site Connectivity & Routing Efficiency*
-* **Virtual Branch Office:** Deployment of a remote site with local switching and routing.
-* **Site-to-Site IPsec VPN:** Established a secure, encrypted tunnel over an untrusted "Cloud" transport.
-* **Dynamic Routing (OSPF):** End-to-end reachability via OSPF with **Route Summarization** to optimize routing table size and CPU overhead.
-* **Key Achievement:** Successfully simulated a corporate WAN environment with optimized traffic paths.
+`./v2-resilient-core-edge-ha-firewall` *(In Progress)*
 
+**Focus:** Removing single points of failure
 
+* **Gateway Redundancy:** HSRP for default gateway failover
+* **Link Resiliency:** LACP EtherChannels between Access and Core
+* **Perimeter Redundancy:** Active/Standby Firewall HA
+* **Failure Testing:** Link pulls, device shutdown simulations, convergence observation
 
-### 🔹 [Phase 5: Automation & Observability](./v5-automation-monitoring) (Planned)
-*Focus: Modern Network Operations (NetOps)*
-* **Configuration Management:** Developed **Python/Netmiko** scripts to automate multi-node configuration backups to a centralized management server.
-* **Continuous Monitoring:** Integration of **Zabbix/LibreNMS** via Docker to track interface statistics and HSRP state changes.
-* **Incident Response:** Configured SNMP Traps and Syslog alerts to provide real-time visibility into link failures.
-* **Key Achievement:** Shifted from reactive troubleshooting to proactive monitoring and "Configuration-as-Code" principles.
+**Outcome:**
+Gateway and perimeter failover without user-facing disruption. Sub-second recovery under tested conditions.
+
+---
+
+### 🔹 Phase 3: Service Isolation & DMZ
+
+`./v3-perimeter-isolation-dmz` *(Planned)*
+
+**Focus:** Controlled service exposure
+
+* Dedicated DMZ segment for public-facing services (e.g., Nginx web servers)
+* Separation of internal services from exposed infrastructure
+* Strict firewall policy enforcement between Internal Zones and DMZ
+* Logging and inspection for inter-zone traffic
+
+**Outcome:**
+Clear trust boundary between internal users and externally accessible systems.
+
+---
+
+### 🔹 Phase 4: WAN & Dynamic Routing
+
+`./v4-autonomous-transit-ospf-vpn` *(Planned)*
+
+**Focus:** Multi-site scalability
+
+* Simulated remote branch deployment
+* Site-to-Site IPsec VPN over untrusted transport
+* OSPF for dynamic routing across sites
+* Route summarization to reduce routing table size and improve stability
+
+**Outcome:**
+Enterprise-style WAN connectivity with scalable routing design.
+
+---
+
+### 🔹 Phase 5: Automation & Observability
+
+`./v5-netops-orchestration-python-docker` *(Planned)*
+
+**Focus:** Operational maturity
+
+* Python (Netmiko) scripts for automated configuration backups
+* Dockerized monitoring stack (Zabbix / LibreNMS)
+* SNMP traps and Syslog integration
+* Monitoring of interface states, HSRP events, and failover transitions
+
+**Outcome:**
+Shift from reactive troubleshooting to proactive monitoring and configuration management.
 
 ---
 
 ## Technical Stack
-* **Simulation:** GNS3 / VMware Workstation
-* **Networking:** Cisco IOSv (Routers/Switches), Cisco ASAv (Firewalls)
-* **Protocols:** OSPF, BGP, HSRP, LACP, 802.1Q (Trunking), NAT/PAT
-* **Automation:** Python (Netmiko), Bash scripts
+
+**Simulation Environment**
+
+* GNS3
+* VMware Workstation
+
+**Network Devices**
+
+* Cisco IOSv (Switching & Routing)
+* FortiGate (Firewall, NAT, HA)
+
+**Protocols & Technologies**
+
+* OSPF
+* HSRP
+* LACP (802.3ad)
+* 802.1Q Trunking
+* NAT / PAT
+* IPsec VPN
+
+**Automation & Tooling**
+
+* Python (Netmiko)
+* Bash scripting
+* Docker-based monitoring stack
 
 ---
 
 ## Engineering Impact
-* **Resiliency:** The network can lose a Core switch, a Firewall, or a trunk link without dropping a single user session.
-* **Scalability:** The modular "Building Block" approach allows for adding new departments (VLANs) or branch offices with minimal reconfiguration.
-* **Observability:** Integrated logging and capture points (Wireshark) allow for rapid troubleshooting of protocol-level issues.
+
+### Resiliency
+
+Core switches, firewall nodes, or trunk links can fail without interrupting active sessions (validated via failover testing).
+
+### Scalability
+
+Modular VLAN and routing design allows additional departments or branch offices with minimal architectural change.
+
+### Security
+
+Clear trust zones enforced via ACLs and firewall policy. Default-deny posture implemented.
+
+### Observability
+
+Integrated logging, packet captures, and monitoring tools reduce troubleshooting time and provide protocol-level visibility.
 
 ---
 
 ## Repository Structure
+
 ```
 Enterprise-Campus-Network-Architecture/
-├── v1-foundation/             # Topology, diagrams, and initial configs
-├── v2-high-availability/      # HSRP/LACP configs and failover tests
-├── v3-services-dmz/           # DMZ design and server configs
-├── v4-wan-scalability/        # VPN and OSPF summarization details
-├── v5-automation-monitoring/  # Python scripts and NMS Docker files
-└── README.md                  # Project Master Documentation
+├── v1-segmentation-fabric-vlan-acl/
+├── v2-resilient-core-edge-ha-firewall/
+├── v3-perimeter-isolation-dmz/
+├── v4-autonomous-transit-ospf-vpn/
+├── v5-netops-orchestration-python-docker/
+└── README.md
 ```
+
+Each phase contains:
+
+* Topology diagrams
+* Design rationale
+* Addressing plans
+* Sanitized configurations
+* Verification and failure test documentation
+* Lessons learned
