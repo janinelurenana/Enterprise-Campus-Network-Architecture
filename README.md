@@ -24,7 +24,7 @@ The objective is not just connectivity — but controlled growth, resilience, an
 
 ### 🔹 Phase 1: Foundation – Segmentation & Core Routing
 
-`./v1-segmentation-fabric-vlan-acl`
+`v1-segmentation-vlan-acl-firewall`
 
 **Focus:** Establishing a secure, routed baseline
 
@@ -41,7 +41,7 @@ A stable, segmented network with defined trust boundaries and least-privilege en
 
 ### 🔹 Phase 2: High Availability & Redundancy
 
-`./v2-resilient-core-edge-ha-firewall` *(In Progress)*
+`v2-resilient-core-ha-firewall`
 
 **Focus:** Removing single points of failure
 
@@ -57,7 +57,7 @@ Gateway and perimeter failover without user-facing disruption. Sub-second recove
 
 ### 🔹 Phase 3: Service Isolation & DMZ
 
-`./v3-perimeter-isolation-dmz` *(Planned)*
+`v3-perimeter-dmz` *(In Progress)*
 
 **Focus:** Controlled service exposure
 
@@ -73,7 +73,7 @@ Clear trust boundary between internal users and externally accessible systems.
 
 ### 🔹 Phase 4: WAN & Dynamic Routing
 
-`./v4-autonomous-transit-ospf-vpn` *(Planned)*
+`v4-transit-ospf-vpn` *(Planned)*
 
 **Focus:** Multi-site scalability
 
@@ -89,7 +89,7 @@ Enterprise-style WAN connectivity with scalable routing design.
 
 ### 🔹 Phase 5: Automation & Observability
 
-`./v5-netops-orchestration-python-docker` *(Planned)*
+`v5-netops-orchestration-python-docker` *(Planned)*
 
 **Focus:** Operational maturity
 
@@ -156,10 +156,10 @@ Integrated logging, packet captures, and monitoring tools reduce troubleshooting
 
 ```
 Enterprise-Campus-Network-Architecture/
-├── v1-segmentation-fabric-vlan-acl/
-├── v2-resilient-core-edge-ha-firewall/
-├── v3-perimeter-isolation-dmz/
-├── v4-autonomous-transit-ospf-vpn/
+├── v1-segmentation-vlan-acl-firewall/
+├── v2-resilient-core-ha-firewall/
+├── v3-perimeter-dmz/
+├── v4-transit-ospf-vpn/
 ├── v5-netops-orchestration-python-docker/
 └── README.md
 ```
