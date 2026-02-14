@@ -1,7 +1,5 @@
 # HA Logic Explained
 
----
-
 ## Design Philosophy
 
 The network implements layered redundancy across:
