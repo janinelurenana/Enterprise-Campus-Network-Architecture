@@ -20,9 +20,12 @@ Prior to the failure event, the cluster was operating in a healthy **Active-Pass
 * **Heartbeat:** Dedicated heartbeat link established on `port8`.
 * **Routing:** The routing table was populated with active static routes via `port1`, `port2`, and `port5`.
 
-Figure 1: [Initial HA cluster state showing synchronized nodes.](./screenshots/01-fw-ha-status-before.png)
+Source File: [01-fw-ha-status-before.png](./screenshots/01-fw-ha-status-before.png) - Initial HA cluster state showing synchronized nodes.
 
-Figure 2: [Active routing table entries on the Primary node.](./screenshots/02-fw-routing-before.png)  
+Source File: [02-fw-routing-before.png](./screenshots/02-fw-routing-before.png) - Active routing table entries on the Primary node.
+
+Source File: [03-ping-baseline-running.png](./screenshots/03-ping-baseline-running.png) - Stable ICMP baseline prior to failure.
+  
 
 ---
 
@@ -37,7 +40,7 @@ As the primary node went offline, the secondary node detected the loss of heartb
 * **Ping Continuity:** A continuous ping from `PC10A` to `8.8.8.8` was monitored. Only **one packet (icmp_seq=11)** was lost during the transition.
 * **Recovery:** Traffic resumed automatically on `icmp_seq=12`.
 
-*Figure 3: ICMP traffic showing minimal interruption (1 packet loss).*
+Source File: [06-ping-during-failover.png](./screenshots/06-ping-during-failover.png) - ICMP traffic showing minimal interruption (1 packet loss).
 
 ---
 
@@ -57,9 +60,9 @@ The HA status now reflects the loss of the peer.
 * **Routing Intact:** The new Primary node updated the routing database. While some ports (like `port2` and `port5`) are marked inactive relative to the failed peer, the active routes migrated to the available physical interfaces (`port3` and `port4`).
 * **NAT/Session Persistence:** Existing sessions survived the transition due to FGCP session synchronization.
 
-*Figure 4: Surviving node reporting itself as the new Primary.*
+Source File: [04-fw-ha-status-after.png](./screenshots/06-fw-ha-status-after.png) — Surviving node reporting itself as the new Primary.
 
-*Figure 5: Updated routing table on the new Primary node.*
+Source File: [05-fw-routing-after.png](./screenshots/08-fw-routing-after.png)  — Updated routing table on the new Primary node.
 
 ---
 
