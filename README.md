@@ -172,3 +172,11 @@ Each phase contains:
 * Sanitized configurations
 * Verification and failure test documentation
 * Lessons learned
+
+---
+
+## Author
+
+Christelle Janine M. Lureñana
+
+Designed and implemented VLANs, ACLs, HSRP, firewall HA, DMZ, OSPF/VPN, and automation in GNS3 with verified failover.
