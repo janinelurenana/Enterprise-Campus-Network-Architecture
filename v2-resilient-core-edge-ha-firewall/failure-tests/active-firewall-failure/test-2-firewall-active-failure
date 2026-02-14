@@ -53,16 +53,16 @@ The surviving node, `FGVMEVNLIKHEMG61`, successfully assumed the role of Primary
 The HA status now reflects the loss of the peer.
 
 * **Error Message:** `FGVMEV_JBNLZY4B0 is lost`.
-* **Mondev Status:** Warnings issued for `port2` and `port5` being down on the original primary, but the new primary has successfully taken over the traffic processing.
+* **Mondev Status:** Warnings issued for `port2` and `port5` being down on the original primary, but the new primary has successfully taken over the traffic processing. These warnings are expected when the peer is offline and do not impact traffic processing on the new Primary.
 
 ### Routing & Connectivity
 
-* **Routing Intact:** The new Primary node updated the routing database. While some ports (like `port2` and `port5`) are marked inactive relative to the failed peer, the active routes migrated to the available physical interfaces (`port3` and `port4`).
+* **Routing Intact:** The new Primary node updated the routing database. While some ports (like `port2` and `port5`) are marked inactive relative to the failed peer. Upon assuming the Primary role, the surviving node activated its local static routes, maintaining reachability via its directly connected interfaces (`port3` and `port4`).
 * **NAT/Session Persistence:** Existing sessions survived the transition due to FGCP session synchronization.
 
-Source File: [04-fw-ha-status-after.png](./screenshots/06-fw-ha-status-after.png) — Surviving node reporting itself as the new Primary.
+Source File: [04-fw-ha-status-after.png](./screenshots/04-fw-ha-status-after.png) — Surviving node reporting itself as the new Primary.
 
-Source File: [05-fw-routing-after.png](./screenshots/08-fw-routing-after.png)  — Updated routing table on the new Primary node.
+Source File: [05-fw-routing-after.png](./screenshots/05-fw-routing-after.png)  — Updated routing table on the new Primary node.
 
 ---
 
@@ -78,4 +78,6 @@ Source File: [05-fw-routing-after.png](./screenshots/08-fw-routing-after.png)  �
 
 ### Conclusion
 
-The FortiGate HA cluster performed as expected. The transition from Primary to Secondary was near-instantaneous, with negligible impact on data plane traffic. The loss of a single ICMP packet confirms that the `session-pickup` feature effectively synchronized the state between members, ensuring a professional-grade failover experience.
+The FortiGate HA cluster performed as expected. The transition from Primary to Secondary was near-instantaneous, with negligible impact on data plane traffic. The loss of a single ICMP packet confirms that the `session-pickup` feature effectively synchronized the state between members.
+
+The HA cluster demonstrated sub-second failover with minimal packet loss and uninterrupted routing continuity. The results confirm correct heartbeat detection, session synchronization, and static route activation on role transition.
