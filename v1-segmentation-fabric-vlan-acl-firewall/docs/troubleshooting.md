@@ -1,7 +1,6 @@
 # Troubleshooting Notes
 
-This document captures real issues encountered during implementation and the reasoning used to resolve them.  
-Each case follows a **symptom → cause → fix → verification** structure.
+This document captures real failure scenarios encountered during the implementation of ACL, VLAN Segmentation and Firewall Policy in **v1-segmentation-fabric-vlan-acl-firewall**.
 
 ---
 
