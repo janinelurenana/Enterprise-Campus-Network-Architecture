@@ -1,3 +1,7 @@
+This documentation provides a comprehensive analysis of the high availability (HA) convergence performance within the core switching layer, specifically focusing on the HSRP failover mechanism during a simulated hardware failure.
+
+---
+
 ## Test Report: Core Switch HSRP Failover Performance
 
 ### 1. Goal
