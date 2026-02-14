@@ -21,10 +21,10 @@ Prior to the failure event, the network was operating in a stable state with **C
 * **Infrastructure:** EtherChannel (Po1) using LACP was operational, and the routing table on CORE-1 was fully populated with a Gateway of Last Resort via `10.10.255.2`.
 
 **Evidence:**
-* [01-core1-hsrp-brief-before.png](./screenshots/01-core1-hsrp-brief-before.png) — Initial HSRP brief showing CORE-1 as Active.
-* [02-core2-hsrp-detail-before.png](./screenshots/02-core2-hsrp-detail-before.png) — CORE-2 detail confirming it is in Standby mode.
-* [03-core1-routing-before.png](./screenshots/03-core1-routing-before.png) — Baseline routing table on the Active Core.
-* [05-ping-baseline-running.png](./screenshots/05-ping-baseline-running.png) — Continuous ping from PC10A showing 0% packet loss.
+* [01-core1-hsrp-brief-before.png](./screenshots/01-core1-hsrp-brief-before.png) - Initial HSRP brief showing CORE-1 as Active.
+* [02-core2-hsrp-detail-before.png](./screenshots/02-core2-hsrp-detail-before.png) - CORE-2 detail confirming it is in Standby mode.
+* [03-core1-routing-before.png](./screenshots/03-core1-routing-before.png) - Baseline routing table on the Active Core.
+* [05-ping-baseline-running.png](./screenshots/05-ping-baseline-running.png) - Continuous ping from PC10A showing 0% packet loss.
 
 ---
 
@@ -40,7 +40,7 @@ As CORE-1 went offline, CORE-2 stopped receiving HSRP hello packets. After the h
 * **Recovery:** Traffic resumed automatically after 5 packets were lost (`icmp_seq=6` through `icmp_seq=10`).
 
 **Evidence:**
-[10-ping-during-failover.png](./screenshots/10-ping-during-failover.png) — ICMP traffic showing the 5-packet interruption during failover.
+[10-ping-during-failover.png](./screenshots/10-ping-during-failover.png) - ICMP traffic showing the 5-packet interruption during failover.
 
 ---
 
@@ -62,9 +62,9 @@ The HSRP status now reflects CORE-2 as the local Active node.
 
 **Evidence:**
 
-[07-core2-hsrp-brief-after.png](./screenshots/07-core2-hsrp-brief-after.png) — CORE-2 confirming its transition to Active state.
-[08-core2-arp-after.png](./screenshots/08-core2-arp-after.png) — ARP table showing CORE-2 maintaining the Virtual IP-to-MAC mapping.
-[09-core2-mactable-after.png](./screenshots/09-core2-mactable-after.png) — MAC address table on CORE-2 showing host reachability via Port-Channel 1.
+[07-core2-hsrp-brief-after.png](./screenshots/07-core2-hsrp-brief-after.png) - CORE-2 confirming its transition to Active state.
+[08-core2-arp-after.png](./screenshots/08-core2-arp-after.png) - ARP table showing CORE-2 maintaining the Virtual IP-to-MAC mapping.
+[09-core2-mactable-after.png](./screenshots/09-core2-mactable-after.png) - MAC address table on CORE-2 showing host reachability via Port-Channel 1.
 
 ---
 
