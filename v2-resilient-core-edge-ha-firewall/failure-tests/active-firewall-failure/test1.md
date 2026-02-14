@@ -20,9 +20,9 @@ Prior to the failure event, the cluster was operating in a healthy **Active-Pass
 * **Heartbeat:** Dedicated heartbeat link established on `port8`.
 * **Routing:** The routing table was populated with active static routes via `port1`, `port2`, and `port5`.
 
-*Figure 1: Initial HA cluster state showing synchronized nodes.*
+Figure 1: [Initial HA cluster state showing synchronized nodes.](./screenshots/01-fw-ha-status-before.png)
 
-*Figure 2: Active routing table entries on the Primary node.*
+Figure 2: [Active routing table entries on the Primary node.](./screenshots/02-fw-routing-before.png)  
 
 ---
 
