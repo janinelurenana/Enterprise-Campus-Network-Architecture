@@ -117,6 +117,12 @@ config firewall address
     next
 end
 
+config firewall addrgrp
+    edit "ALL_INTERNAL_SUBNETS"
+        set member "IT_SUBNET" "MGMT_SUBNET" "HR_SUBNET" "GUEST_SUBNET"
+    next
+end
+
 config firewall policy
     edit 5
         set name "GUEST_to_INTERNAL_DENY"
@@ -130,55 +136,13 @@ config firewall policy
         set logtraffic all
     next
     edit 1
-        set name "IT_to_WAN"
-        set uuid 3cc68f30-00ef-51f1-8d52-458ec0860593
+        set name "INTERNAL_to_WAN"
         set srcintf "ZONE_INTERNAL"
         set dstintf "ZONE_WAN"
-        set action accept
-        set srcaddr "IT_SUBNET"
-        set dstaddr "all"
-        set schedule "always"
-        set service "ALL"
-        set logtraffic all
-        set nat enable
-    next
-    edit 2
-        set name "MGMT_to_WAN"
-        set uuid 95679df4-00f0-51f1-225d-d75890f602b7
-        set srcintf "ZONE_INTERNAL"
-        set dstintf "ZONE_WAN"
-        set action accept
-        set srcaddr "MGMT_SUBNET"
+        set srcaddr "ALL_INTERNAL_SUBNETS"
         set dstaddr "all"
         set schedule "always"
         set service "HTTP" "HTTPS" "DNS" "PING"
-        set logtraffic all
-        set nat enable
-    next
-    edit 3
-        set name "HR_to_WAN"
-        set uuid ed729ba2-00f0-51f1-4953-0478a1cd38ab
-        set srcintf "ZONE_INTERNAL"
-        set dstintf "ZONE_WAN"
-        set action accept
-        set srcaddr "HR_SUBNET"
-        set dstaddr "all"
-        set schedule "always"
-        set service "HTTP" "HTTPS" "DNS" "PING"
-        set logtraffic all
-        set nat enable
-    next
-    edit 4
-        set name "GUEST_to_WAN"
-        set uuid c2753b6c-0109-51f1-1cec-740140f71dba
-        set srcintf "ZONE_INTERNAL"
-        set dstintf "ZONE_WAN"
-        set action accept
-        set srcaddr "GUEST_SUBNET"
-        set dstaddr "all"
-        set schedule "always"
-        set service "HTTP" "HTTPS" "DNS" "PING"
-        set logtraffic all
         set nat enable
     next
 end
