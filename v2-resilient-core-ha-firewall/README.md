@@ -262,9 +262,7 @@ Redundancy reduces outage probability but increases configuration responsibility
 v2-resilient-core-edge-ha-firewall/
 ├── README.md
 ├── topology/
-│   ├── topology.png
-│   ├── ip-addressing-plan.md
-│   └── failover-flow-diagram.png
+│   └── topology.png
 ├── configs/
 │   ├── core/
 │   │   ├── core1.txt
@@ -283,6 +281,8 @@ v2-resilient-core-edge-ha-firewall/
 │   └── test-4-dual-failure-scenario/
 ├── docs/
 │   ├── design-decisions.md
+│   ├── ip-addressing-plan.md
+│   ├── failover-flow-diagram.png
 │   ├── troubleshooting.md
 │   └── lessons-learned.md
 ```
