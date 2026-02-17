@@ -193,18 +193,6 @@ config firewall policy
         set logtraffic all
         set nat enable
     next
-    edit 10
-        set name "Cores_to_WAN"
-        set uuid 5e6865f8-08bc-51f1-80a1-a4182bb90271
-        set srcintf "ZONE_INTERNAL"
-        set dstintf "ZONE_WAN"
-        set action accept
-        set srcaddr "all"
-        set dstaddr "all"
-        set schedule "always"
-        set service "ALL"
-        set nat enable
-    next
 end
 
 config system link-monitor
