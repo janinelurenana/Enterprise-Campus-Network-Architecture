@@ -118,18 +118,6 @@ config firewall address
 end
 
 config firewall policy
-    edit 6
-        set name "VPC_to_FG"
-        set uuid c6c77eee-0804-51f1-3176-15ba08a7fc16
-        set srcintf "ZONE_INTERNAL"
-        set dstintf "ZONE_INTERNAL"
-        set action accept
-        set srcaddr "all"
-        set dstaddr "all"
-        set schedule "always"
-        set service "ALL"
-        set nat enable
-    next
     edit 5
         set name "GUEST_to_INTERNAL_DENY"
         set uuid f1b25fcc-0109-51f1-fdbb-482a681faf40
