@@ -98,6 +98,24 @@ config router static
     next
 end
 
+config firewall address
+    edit "IT_SUBNET"
+        set uuid defeea28-00ee-51f1-2d12-003f87b766d5
+        set subnet 10.10.10.0 255.255.255.0
+    next
+    edit "MGMT_SUBNET"
+        set uuid e91d1a52-00ee-51f1-9219-519887782440
+        set subnet 10.10.20.0 255.255.255.0
+    next
+    edit "HR_SUBNET"
+        set uuid f75c92aa-00ee-51f1-cdfc-60825f45f840
+        set subnet 10.10.30.0 255.255.255.0
+    next
+    edit "GUEST_SUBNET"
+        set uuid 0111e8a4-00ef-51f1-c8c2-192edcee034b
+        set subnet 10.10.40.0 255.255.255.0
+    next
+end
 
 config firewall policy
     edit 6
