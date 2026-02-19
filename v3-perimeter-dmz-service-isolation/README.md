@@ -151,3 +151,25 @@ v3 demonstrates **practical perimeter hardening**:
 
 This phase bridges segmentation and redundancy into a **secure, controlled, production-like network environment**.
 
+---
+
+## Repository Structure
+
+```
+v3-perimeter-dmz-service-isolation/
+├── configs/
+│   ├── firewall/
+│   ├── zone-dmz/
+│   ├── zone-internal/
+│   └── zone-wan/
+├── docs/
+│   ├── dmz-design.md
+│   ├── firewall-policy-matrix.md
+│   └── hr-segmentation-design.md
+├── topology/
+│   └── topology.png
+├── verification/
+│   ├── segmentation-tests/
+│   └── service-availability-tests/
+└── README.md
+```
