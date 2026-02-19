@@ -1,4 +1,4 @@
-# Campus Network – Perimeter Hardening & DMZ Service Isolation
+# Campus Network Architecture – Trust Zone Enforcement & DMZ Isolation
 
 ## Executive Summary
 
