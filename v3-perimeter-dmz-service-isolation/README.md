@@ -1,8 +1,4 @@
-Here’s a tightened, more structured, and professional revision of your v3 DMZ/Perimeter Hardening doc. I’ve kept your content faithful but aligned it more with the style and clarity of v2, emphasizing goals, architecture, verification, and lessons learned.
-
----
-
-# Campus Network – Perimeter Hardening & DMZ Service Isolation (v3)
+# Campus Network – Perimeter Hardening & DMZ Service Isolation
 
 ## Executive Summary
 
@@ -154,6 +150,4 @@ v3 demonstrates **practical perimeter hardening**:
 * End-to-end validation ensures policies operate as intended
 
 This phase bridges segmentation and redundancy into a **secure, controlled, production-like network environment**.
-
----
 
