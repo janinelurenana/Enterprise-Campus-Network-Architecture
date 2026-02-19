@@ -1,29 +1,38 @@
-# v3 – Perimeter Hardening & Service Isolation (DMZ Implementation)
-
-## Overview
-
-This phase introduces perimeter hardening through DMZ isolation and stricter inter-zone firewall enforcement.
-
-Unlike previous versions focused on segmentation (v1) and high availability (v2), this version focuses on:
-
-* Controlled public service exposure
-* Clear trust boundaries between internal and exposed systems
-* Enforcement of deny-by-default inter-zone traffic
-* Protection of sensitive internal resources (HR File Server)
+Here’s a tightened, more structured, and professional revision of your v3 DMZ/Perimeter Hardening doc. I’ve kept your content faithful but aligned it more with the style and clarity of v2, emphasizing goals, architecture, verification, and lessons learned.
 
 ---
 
-## Architectural Goals
+# Campus Network – Perimeter Hardening & DMZ Service Isolation (v3)
 
-1. Isolate public-facing services from internal infrastructure
-2. Prevent lateral movement between DMZ and internal networks
-3. Restrict HR file server access to authorized internal VLANs
-4. Enforce explicit security policies at the firewall
-5. Validate segmentation through end-to-end testing
+## Executive Summary
+
+v3 evolves the campus network from simple segmentation and redundancy (v2) into a **perimeter-hardened architecture** with strict service isolation.
+
+Key objectives:
+
+* Isolate public-facing services from internal infrastructure
+* Enforce explicit trust boundaries via firewall zones
+* Restrict sensitive internal resources (e.g., HR File Server)
+* Implement deny-by-default inter-zone traffic posture
+* Validate security posture through end-to-end testing
+
+This phase demonstrates practical DMZ placement, VLAN segmentation, ACL enforcement, and firewall policy control.
 
 ---
 
-## Zone Design
+## Architectural Model
+
+![Network Topology](./topology/topology.png)
+
+1. **Perimeter Isolation:** Ensure DMZ hosts public services while protecting internal VLANs
+2. **Lateral Movement Prevention:** Restrict cross-zone traffic to reduce attack surface
+3. **Sensitive Resource Protection:** HR File Server accessible only to authorized internal VLANs
+4. **Policy Enforcement:** Apply strict firewall rules and logging for inter-zone traffic
+5. **Validation & Monitoring:** Confirm segmentation and access controls via structured testing
+
+---
+
+## Zone & VLAN Design
 
 ### Firewall Zones
 
@@ -43,17 +52,15 @@ Unlike previous versions focused on segmentation (v1) and high availability (v2)
 | 40   | Guest                  |
 | 50   | DMZ (Nginx Web Server) |
 
----
+### Network Model
 
-## Network Design Model
-
-This implementation follows a **hub-and-spoke security model** with firewall-enforced zone separation.
+v3 follows a **hub-and-spoke security model**:
 
 * Core switch performs inter-VLAN routing
-* ACLs restrict internal lateral access where required
+* ACLs control internal access to sensitive VLANs
 * FortiGate firewall enforces zone-to-zone policies
-* DMZ connected to a dedicated Layer 2 switch
-* Default posture: deny unless explicitly permitted
+* DMZ connected via dedicated Layer 2 switch
+* Default posture: deny unless explicitly allowed
 
 Trust boundaries are enforced at the firewall, not the switch fabric.
 
@@ -61,26 +68,19 @@ Trust boundaries are enforced at the firewall, not the switch fabric.
 
 ## Service Placement Strategy
 
-### DMZ (VLAN 50)
+### DMZ – VLAN 50
 
 * Hosts public Nginx web server
-* Accessible from WAN via controlled firewall policy
+* Accessible from WAN via firewall policy
 * No direct access to internal VLANs
 
-### HR File Server (VLAN 30)
+### HR File Server – VLAN 30
 
-* Hosted within ZONE_INTERNAL
-* Accessible only from:
+* Located within ZONE_INTERNAL
+* Accessible only from VLAN 10 (IT) and VLAN 20 (Management)
+* Blocked from VLAN 40 (Guest), ZONE_DMZ, and WAN
 
-  * VLAN 10 (IT)
-  * VLAN 20 (Management)
-* Blocked from:
-
-  * VLAN 40 (Guest)
-  * ZONE_DMZ
-  * ZONE_WAN
-
-Segmentation is VLAN-based and enforced using core ACLs and firewall policies.
+Segmentation is VLAN-based, enforced with ACLs and firewall policies.
 
 ---
 
@@ -95,65 +95,65 @@ Segmentation is VLAN-based and enforced using core ACLs and firewall policies.
 | DMZ      | INTERNAL    | Deny                     | Prevent lateral movement    |
 | INTERNAL | WAN         | Allow (controlled)       | Internet access             |
 
-Implicit deny exists at the bottom of the policy table.
+> Implicit deny exists for all other traffic.
 
 ---
 
 ## Security Posture
 
-This version enforces:
-
-* Strict inter-zone inspection
-* Logging of inter-zone traffic
-* Clear separation of exposed and internal services
+* Strict inter-zone inspection with logging
+* Clear separation between exposed and internal services
 * Reduced blast radius in case of DMZ compromise
-
-If the DMZ web server is compromised, firewall policy prevents pivoting into internal VLANs.
+* Firewall prevents pivoting from DMZ to internal networks
 
 ---
 
 ## Verification & Testing
 
-The following scenarios were validated:
+Tested scenarios:
 
-✔ WAN → DMZ (HTTP/HTTPS) successful
-✔ WAN → INTERNAL blocked
-✔ Guest VLAN → HR server denied
-✔ IT/Management → HR server successful
-✔ DMZ → INTERNAL denied
-✔ Firewall logs confirm policy enforcement
+| Test Case                      | Result              |
+| ------------------------------ | ------------------- |
+| WAN → DMZ (HTTP/HTTPS)         | ✅ Allowed           |
+| WAN → INTERNAL                 | ✅ Blocked           |
+| Guest VLAN → HR File Server    | ✅ Denied            |
+| IT/Management → HR File Server | ✅ Allowed           |
+| DMZ → INTERNAL                 | ✅ Denied            |
+| Firewall Logs                  | ✅ Policies enforced |
 
-All verification evidence is included in the `verification/` directory.
+All verification evidence stored in `verification/` directory.
 
 ---
 
 ## Key Changes from v2
 
-* Added VLAN 30 (HR segment)
-* Added VLAN 50 (DMZ)
-* Implemented dedicated DMZ switch
-* Updated firewall zone policies
-* Updated core ACLs
-* Introduced public service exposure model
+* Added VLAN 30 (HR segment) and VLAN 50 (DMZ)
+* Dedicated DMZ switch implemented
+* Updated firewall zone policies and ACLs
+* Public service exposure model added
+* Default deny inter-zone policy enforced
 
 ---
 
 ## Lessons Learned
 
-* Segmentation without strict firewall policy is incomplete
+* Segmentation alone is insufficient without firewall enforcement
 * Service exposure must be intentional and minimal
-* VLAN separation alone is insufficient without enforcement
-* Clear trust boundary documentation improves architecture clarity
-* DMZ placement significantly reduces internal attack surface
+* Documented trust boundaries improve architecture clarity
+* DMZ reduces internal attack surface effectively
 
 ---
 
 ## Summary
 
-v3 transitions the lab environment from simple segmentation and redundancy into a perimeter-hardened architecture.
+v3 demonstrates **practical perimeter hardening**:
 
-Public services are isolated.
-Internal services are protected.
-Trust boundaries are clearly defined and enforced.
+* Public services isolated in DMZ
+* Internal services protected
+* Clear, enforceable trust boundaries
+* End-to-end validation ensures policies operate as intended
 
-This phase demonstrates practical service isolation using VLAN segmentation, ACL control, and firewall zone policy enforcement.
+This phase bridges segmentation and redundancy into a **secure, controlled, production-like network environment**.
+
+---
+
