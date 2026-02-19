@@ -1,0 +1,154 @@
+config system interface
+    edit "port1"
+        set vdom "root"
+        set mode dhcp
+        set distance 10
+        set allowaccess ping https ssh
+        set type physical
+        set alias "WAN-1"
+        set snmp-index 1
+    next
+    edit "port2"
+        set vdom "root"
+        set ip 10.10.255.2 255.255.255.252
+        set allowaccess ping https ssh
+        set type physical
+        set description "Link to Core-1 G0/0"
+        set snmp-index 2
+    next
+    edit "port3"
+        set vdom "root"
+        set ip 10.10.255.10 255.255.255.252
+        set allowaccess ping
+        set type physical
+        set description "Link to Core-2 G2/0"
+        set snmp-index 3
+    next
+    edit "port4"
+        set vdom "root"
+        set ip 10.10.255.6 255.255.255.252
+        set allowaccess ping
+        set type physical
+        set snmp-index 4
+    next
+    edit "port5"
+        set vdom "root"
+        set ip 10.10.255.14 255.255.255.252
+        set allowaccess ping https ssh
+        set type physical
+        set snmp-index 5
+
+config system zone
+    edit "ZONE_INTERNAL"
+        set interface "port2" "port3" "port4" "port5"
+    next
+    edit "ZONE_WAN"
+        set interface "port1"
+    next
+    edit "ZONE_DMZ"
+        set interface "port9"
+    next
+end
+
+config firewall address
+edit "IT_SUBNET"
+        set uuid defeea28-00ee-51f1-2d12-003f87b766d5
+        set subnet 10.10.10.0 255.255.255.0
+    next
+    edit "MGMT_SUBNET"
+        set uuid e91d1a52-00ee-51f1-9219-519887782440
+        set subnet 10.10.20.0 255.255.255.0
+    next
+    edit "HR_SUBNET"
+        set uuid f75c92aa-00ee-51f1-cdfc-60825f45f840
+        set subnet 10.10.30.0 255.255.255.0
+    next
+    edit "GUEST_SUBNET"
+        set uuid 0111e8a4-00ef-51f1-c8c2-192edcee034b
+        set subnet 10.10.40.0 255.255.255.0
+    next
+    edit "DMZ_SUBNET"
+        set uuid 3c910438-0bcf-51f1-9f6a-44f8be747a4c
+        set subnet 10.10.50.0 255.255.255.0
+    next
+end
+
+config firewall addrgrp
+    edit "ALL_INTERNAL_SUBNETS"
+        set member "IT_SUBNET" "MGMT_SUBNET" "HR_SUBNET" "GUEST_SUBNET"
+    next
+end
+
+config firewall policy
+    edit 5
+        set name "GUEST_to_INTERNAL_DENY"
+        set uuid f1b25fcc-0109-51f1-fdbb-482a681faf40
+        set srcintf "ZONE_INTERNAL"
+        set dstintf "ZONE_INTERNAL"
+        set srcaddr "GUEST_SUBNET"
+        set dstaddr "IT_SUBNET" "MGMT_SUBNET" "HR_SUBNET"
+        set schedule "always"
+        set service "ALL"
+        set logtraffic all
+    next
+    edit 11
+        set name "BLOCK_DMZ_TO_INTERNAL"
+        set uuid 82581a7e-0bcf-51f1-6ea2-df94887b0db0
+        set srcintf "ZONE_DMZ"
+        set dstintf "ZONE_INTERNAL"
+        set srcaddr "all"
+        set dstaddr "all"
+        set action deny
+        set schedule "always"
+        set service "ALL"
+        set logtraffic all
+    next
+    edit 12
+        set name "WAN_to_INTERNAL_DENY"
+        set srcintf "ZONE_WAN"
+        set dstintf "ZONE_INTERNAL"
+        set srcaddr "all"
+        set dstaddr "ALL_INTERNAL_SUBNETS"
+        set action deny
+        set schedule "always"
+        set service "ALL"
+        set logtraffic all
+    next
+    edit 10
+        set name "WAN_to_DMZ_WEB"
+        set srcintf "ZONE_WAN"
+        set dstintf "ZONE_DMZ"
+        set srcaddr "all"
+        set dstaddr "VIP-WEB-HTTP" "VIP-WEB-HTTPS"
+        set action accept
+        set schedule "always"
+        set service "HTTP" "HTTPS"
+        set logtraffic all
+        set nat disable
+    next
+    edit 1
+        set name "INTERNAL_to_WAN"
+        set srcintf "ZONE_INTERNAL"
+        set dstintf "ZONE_WAN"
+        set srcaddr "ALL_INTERNAL_SUBNETS"
+        set dstaddr "all"
+        set action accept
+        set schedule "always"
+        set service "HTTP" "HTTPS" "DNS" "PING"
+        set nat enable
+        set logtraffic all
+    next
+    edit 9
+        set name "DMZ_to_Internet"
+        set uuid 7da5f3fc-0bcf-51f1-e4ed-0c7a8e87ca46
+        set srcintf "ZONE_DMZ"
+        set dstintf "ZONE_WAN"
+        set action accept
+        set srcaddr "all"
+        set dstaddr "all"
+        set schedule "always"
+        set service "DNS" "HTTPS" "PING"
+        set nat enable
+    next
+end
+

@@ -1,0 +1,54 @@
+!
+! Core L3 – East–West ACLs
+!
+ip access-list extended ACL_IT_IN
+ permit icmp any any echo-reply
+ permit tcp any any established
+ deny ip 10.10.10.0 0.0.0.255 10.10.40.0 0.0.0.255 log
+ permit ip 10.10.10.0 0.0.0.255 10.10.20.0 0.0.0.255
+ permit ip 10.10.10.0 0.0.0.255 10.10.30.0 0.0.0.255
+ permit ip 10.10.10.0 0.0.0.255 any
+ deny ip any any
+!
+ip access-list extended ACL_MGMT_IN
+ permit icmp any any echo-reply
+ permit tcp any any established
+ deny ip 10.10.20.0 0.0.0.255 10.10.10.0 0.0.0.255 log
+ deny ip 10.10.20.0 0.0.0.255 10.10.40.0 0.0.0.255 log
+ permit ip 10.10.20.0 0.0.0.255 10.10.30.0 0.0.0.255
+ permit ip 10.10.20.0 0.0.0.255 any
+ deny ip any any 
+!
+ip access-list extended ACL_HR_IN
+ permit icmp any any echo-reply
+ permit tcp any any established
+ deny ip 10.10.30.0 0.0.0.255 10.10.10.0 0.0.0.255 log
+ deny ip 10.10.30.0 0.0.0.255 10.10.20.0 0.0.0.255 log
+ deny ip 10.10.30.0 0.0.0.255 10.10.40.0 0.0.0.255 log
+ permit ip 10.10.30.0 0.0.0.255 any
+ deny ip any any
+!
+ip access-list extended ACL_GUEST_IN
+ permit icmp any any echo-reply
+ permit tcp any any established
+ deny ip 10.10.40.0 0.0.0.255 10.10.0.0 0.0.255.255 log
+ permit ip 10.10.40.0 0.0.0.255 any
+ deny ip any any
+!
+interface vlan 10
+ ip access-group ACL_IT_IN in
+ no ip unreachables
+!
+interface vlan 20
+ ip access-group ACL_MGMT_IN in
+ no ip unreachables
+!
+interface vlan 30
+ ip access-group ACL_HR_IN in
+ no ip unreachables
+!
+interface vlan 40
+ ip access-group ACL_GUEST_IN in
+ no ip unreachables
+!
+
