@@ -21,7 +21,7 @@ All redundancy mechanisms were validated through controlled failure simulations.
 
 ## Architectural Model
 
-![Network Topology](./topology/topology.png)
+![Network Topology](./topology/v2-topology.png)
 
 ### Collapsed Core/Distribution Layer
 
