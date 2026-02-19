@@ -79,6 +79,25 @@ config firewall addrgrp
     next
 end
 
+config firewall vip
+    edit "VIP-WEB-HTTP"
+        set uuid 1f682b38-0bd5-51f1-d4bc-967418a2918a
+        set mappedip "10.10.50.10"
+        set extintf "port1"
+        set portforward enable
+        set extport 80
+        set mappedport 80
+    next
+    edit "VIP-WEB-HTTPS"
+        set uuid 1f7bcfc6-0bd5-51f1-b9eb-887bb51b76ad
+        set mappedip "10.10.50.10"
+        set extintf "port1"
+        set portforward enable
+        set extport 443
+        set mappedport 443
+    next
+end
+
 config firewall policy
     edit 5
         set name "GUEST_to_INTERNAL_DENY"
