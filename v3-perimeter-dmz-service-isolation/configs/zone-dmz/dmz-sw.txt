@@ -25,11 +25,4 @@ interface GigabitEthernet0/2
  switchport mode access
  negotiation auto
  spanning-tree portfast edge
-!        
-interface GigabitEthernet1/0
- description DMZ_SERVERS
- switchport access vlan 50
- switchport mode access
- negotiation auto
- spanning-tree portfast edge
-!         
+!  
