@@ -24,7 +24,7 @@ The objective is not just connectivity — but controlled growth, resilience, an
 
 ### 🔹 Phase 1: Foundation – Segmentation & Core Routing
 
-`v1-segmentation-vlan-acl-firewall`
+[v1-segmentation-vlan-acl-firewall](./v1-segmentation-vlan-acl-firewall/)
 
 **Focus:** Establishing a secure, routed baseline
 
@@ -41,7 +41,7 @@ A stable, segmented network with defined trust boundaries and least-privilege en
 
 ### 🔹 Phase 2: High Availability & Redundancy
 
-`v2-resilient-core-ha-firewall`
+[v2-resilient-core-ha-firewall](./v2-resilient-core-ha-firewall/)
 
 **Focus:** Removing single points of failure
 
@@ -57,23 +57,23 @@ Gateway and perimeter failover without user-facing disruption. Sub-second recove
 
 ### 🔹 Phase 3: Service Isolation & DMZ
 
-`v3-perimeter-dmz` *(In Progress)*
+[v3-perimeter-dmz-service-isolation](./v3-perimeter-dmz-service-isolation/) 
 
-**Focus:** Controlled service exposure
+**Focus:** Controlled service exposure and segmentation
 
-* Dedicated DMZ segment for public-facing services (e.g., Nginx web servers)
-* Separation of internal services from exposed infrastructure
-* Strict firewall policy enforcement between Internal Zones and DMZ
-* Logging and inspection for inter-zone traffic
+* Deployed a **DMZ web server** (`Nginx` on Alpine) for public-facing access
+* Maintained **HR file server** within the Internal zone
+* Enforced strict **firewall policies** to block DMZ → Internal traffic while allowing controlled Internal → DMZ access
+* Implemented **logging and inspection** for inter-zone traffic
 
 **Outcome:**
-Clear trust boundary between internal users and externally accessible systems.
+A clear trust boundary between internal users and externally accessible systems, ensuring that DMZ services cannot directly compromise Internal resources.
 
 ---
 
 ### 🔹 Phase 4: WAN & Dynamic Routing
 
-`v4-transit-ospf-vpn` *(Planned)*
+`v4-transit-ospf-vpn` *(In Progress)*
 
 **Focus:** Multi-site scalability
 
