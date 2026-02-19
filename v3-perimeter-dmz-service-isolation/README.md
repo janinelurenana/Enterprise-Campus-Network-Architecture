@@ -18,7 +18,7 @@ This phase demonstrates practical DMZ placement, VLAN segmentation, ACL enforcem
 
 ## Architectural Model
 
-![Network Topology](./topology/topology.png)
+![Network Topology](./topology/v3-topology.png)
 
 1. **Perimeter Isolation:** Ensure DMZ hosts public services while protecting internal VLANs
 2. **Lateral Movement Prevention:** Restrict cross-zone traffic to reduce attack surface
