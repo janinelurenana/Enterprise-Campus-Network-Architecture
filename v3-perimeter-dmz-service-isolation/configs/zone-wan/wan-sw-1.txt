@@ -1,0 +1,22 @@
+!
+hostname WAN-SW-1
+!
+interface GigabitEthernet0/0
+ description FG-1_WAN
+ switchport access vlan 901
+ switchport mode access
+ negotiation auto
+!         
+interface GigabitEthernet0/1
+ description ISP-1_UPLINK
+ switchport access vlan 901
+ switchport mode access
+ negotiation auto
+ no cdp enable
+!         
+interface GigabitEthernet0/2
+ description FG-2_WAN
+ switchport access vlan 901
+ switchport mode access
+ negotiation auto
+!         
