@@ -177,6 +177,10 @@ Each phase contains:
 
 ## Author
 
-Christelle Janine M. Lureñana
-
+**Christelle Janine Lureñana**  
 Designed and implemented VLANs, ACLs, HSRP, firewall HA, DMZ, OSPF/VPN, and automation in GNS3 with verified failover.
+
+**Email:** lchristellejanine@gmail.com  
+**LinkedIn:** https://www.linkedin.com/in/lurenanachristellejanine/  
+**GitHub:** https://github.com/janinelurenana
+
