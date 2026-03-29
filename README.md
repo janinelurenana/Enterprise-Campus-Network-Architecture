@@ -87,22 +87,6 @@ Enterprise-style WAN connectivity with scalable routing design.
 
 ---
 
-### 🔹 Phase 5: Automation & Observability
-
-`v5-netops-orchestration-python-docker` *(Planned)*
-
-**Focus:** Operational maturity
-
-* Python (Netmiko) scripts for automated configuration backups
-* Dockerized monitoring stack (Zabbix / LibreNMS)
-* SNMP traps and Syslog integration
-* Monitoring of interface states, HSRP events, and failover transitions
-
-**Outcome:**
-Shift from reactive troubleshooting to proactive monitoring and configuration management.
-
----
-
 ## Technical Stack
 
 **Simulation Environment**
@@ -123,12 +107,6 @@ Shift from reactive troubleshooting to proactive monitoring and configuration ma
 * 802.1Q Trunking
 * NAT / PAT
 * IPsec VPN
-
-**Automation & Tooling**
-
-* Python (Netmiko)
-* Bash scripting
-* Docker-based monitoring stack
 
 ---
 
@@ -160,7 +138,6 @@ Enterprise-Campus-Network-Architecture/
 ├── v2-resilient-core-ha-firewall/
 ├── v3-perimeter-dmz/
 ├── v4-transit-ospf-vpn/
-├── v5-netops-orchestration-python-docker/
 └── README.md
 ```
 
