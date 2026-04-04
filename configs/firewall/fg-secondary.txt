@@ -1,0 +1,227 @@
+# ============================================================
+# Device  : FG-2 (FortiGate-VM64-KVM)
+# Serial  : FGVMEVNLIKHEMG61
+# Role    : Firewall — HA Secondary (Standby)
+# Version : FortiOS v7.0.9 build 0444
+# HA Mode : Active-Passive, Priority 100 (lower = standby)
+# Sync    : Config and session state synced from FG-1
+# ============================================================
+#
+# NOTE: In Active-Passive HA, the secondary unit does not
+# independently process traffic. All policy, routing, and
+# address configuration below is maintained in sync with
+# FG-1 via the HA cluster. This file reflects the secondary's
+# independent configuration — primarily HA parameters and
+# interface addressing — and documents what a standalone
+# view of FG-2 would show.
+#
+# Operator note: Do not modify policy or routing on FG-2
+# directly. All changes should be made on the primary (FG-1)
+# and will be pushed to FG-2 via HA sync.
+# ============================================================
+
+
+# ------------------------------------------------------------
+# High Availability
+# ------------------------------------------------------------
+# priority 100   : Lower priority — FG-2 yields primary role
+#                  to FG-1 under normal conditions.
+# override disable: FG-2 does NOT re-assert primary after
+#                   recovery. It waits for the administrator
+#                   to manually trigger failback if desired.
+#                   This prevents flapping if FG-1 is unstable.
+# All other HA parameters must match FG-1 exactly for the
+# cluster to form (group-id, group-name, hbdev, hb-lost-threshold).
+# ------------------------------------------------------------
+
+config system ha
+    set group-id 10
+    set group-name "FG-CLUSTER"
+    set mode a-p
+    set hbdev "port8" 50
+    set hb-lost-threshold 8
+    set arps 10
+    set session-pickup enable
+    set link-failed-signal enable
+    set override disable
+    set priority 100
+    set monitor "port2" "port3" "port4" "port5"
+end
+
+
+# ------------------------------------------------------------
+# Interface Addressing
+# ------------------------------------------------------------
+# FG-2 interfaces connect to the same core switches as FG-1
+# but on different physical links, providing independent
+# Layer 3 adjacencies.
+#
+# port4  : Primary link to CORE-2 G0/0  (10.10.255.6/30)
+# port5  : Cross-link to CORE-1 G2/0    (10.10.255.14/30)
+# port2  : Cross-link to CORE-1 G0/0    (10.10.255.2/30)  [shared subnet with FG-1 port2]
+# port3  : Cross-link to CORE-2 G2/0    (10.10.255.10/30) [shared subnet with FG-1 port3]
+#
+# In Active-Passive HA with a shared virtual MAC, both units
+# share IP addresses on internal-facing interfaces. The primary
+# responds to ARP; the secondary does not until failover occurs.
+# ------------------------------------------------------------
+
+config system interface
+    edit "port1"
+        set vdom "root"
+        set mode dhcp
+        set distance 10
+        set allowaccess ping https ssh
+        set type physical
+        set alias "WAN"
+        set snmp-index 1
+    next
+    edit "port2"
+        set vdom "root"
+        set ip 10.10.255.2 255.255.255.252
+        set allowaccess ping https ssh
+        set type physical
+        set description "Cross-Link-to-CORE-1-G0/0"
+        set snmp-index 2
+    next
+    edit "port3"
+        set vdom "root"
+        set ip 10.10.255.10 255.255.255.252
+        set allowaccess ping
+        set type physical
+        set description "Cross-Link-to-CORE-2-G2/0"
+        set snmp-index 3
+    next
+    edit "port4"
+        set vdom "root"
+        set ip 10.10.255.6 255.255.255.252
+        set allowaccess ping
+        set type physical
+        set description "Primary-Link-to-CORE-2-G0/0"
+        set snmp-index 4
+    next
+    edit "port5"
+        set vdom "root"
+        set ip 10.10.255.14 255.255.255.252
+        set allowaccess ping https ssh
+        set type physical
+        set description "Cross-Link-to-CORE-1-G2/0"
+        set snmp-index 5
+    next
+end
+
+
+# ------------------------------------------------------------
+# Zones, Routing, Address Objects, and Policy
+# ------------------------------------------------------------
+# All of the following is synced from FG-1 via HA.
+# Shown here for documentation completeness and to reflect
+# what would be visible on this unit via CLI.
+# ------------------------------------------------------------
+
+config system zone
+    edit "ZONE_INTERNAL"
+        set interface "port2" "port3" "port4" "port5"
+    next
+    edit "ZONE_WAN"
+        set interface "port1"
+    next
+end
+
+config router static
+    edit 1
+        set dst 10.10.0.0 255.255.0.0
+        set gateway 10.10.255.5
+        set device "port4"
+        set comment "Primary path to internal via CORE-2"
+    next
+    edit 2
+        set dst 10.10.0.0 255.255.0.0
+        set gateway 10.10.255.13
+        set priority 20
+        set device "port5"
+        set comment "Cross path to internal via CORE-2 via FG-1 link"
+    next
+    edit 3
+        set dst 10.10.0.0 255.255.0.0
+        set gateway 10.10.255.1
+        set device "port2"
+        set comment "Cross path to internal via CORE-1"
+    next
+    edit 4
+        set dst 10.10.0.0 255.255.0.0
+        set gateway 10.10.255.9
+        set priority 20
+        set device "port3"
+        set comment "Cross path to internal via CORE-2 backup"
+    next
+end
+
+config firewall address
+    edit "IT_SUBNET"
+        set subnet 10.10.10.0 255.255.255.0
+    next
+    edit "MGMT_SUBNET"
+        set subnet 10.10.20.0 255.255.255.0
+    next
+    edit "HR_SUBNET"
+        set subnet 10.10.30.0 255.255.255.0
+    next
+    edit "GUEST_SUBNET"
+        set subnet 10.10.40.0 255.255.255.0
+    next
+    edit "DMZ_SUBNET"
+        set subnet 10.10.50.0 255.255.255.0
+    next
+end
+
+config firewall addrgrp
+    edit "ALL_INTERNAL_SUBNETS"
+        set member "IT_SUBNET" "MGMT_SUBNET" "HR_SUBNET" "GUEST_SUBNET"
+    next
+end
+
+config firewall policy
+    edit 5
+        set name "GUEST_to_INTERNAL_DENY"
+        set srcintf "ZONE_INTERNAL"
+        set dstintf "ZONE_INTERNAL"
+        set srcaddr "GUEST_SUBNET"
+        set dstaddr "IT_SUBNET" "MGMT_SUBNET" "HR_SUBNET"
+        set schedule "always"
+        set service "ALL"
+        set logtraffic all
+    next
+    edit 10
+        set name "WAN_to_DMZ"
+        set srcintf "ZONE_WAN"
+        set dstintf "ZONE_INTERNAL"
+        set srcaddr "all"
+        set dstaddr "DMZ_SUBNET"
+        set action accept
+        set schedule "always"
+        set service "HTTP" "HTTPS"
+        set logtraffic all
+    next
+    edit 20
+        set name "DMZ_to_INTERNAL_DENY"
+        set srcintf "ZONE_INTERNAL"
+        set dstintf "ZONE_INTERNAL"
+        set srcaddr "DMZ_SUBNET"
+        set dstaddr "ALL_INTERNAL_SUBNETS"
+        set schedule "always"
+        set service "ALL"
+        set logtraffic all
+    next
+    edit 1
+        set name "INTERNAL_to_WAN"
+        set srcintf "ZONE_INTERNAL"
+        set dstintf "ZONE_WAN"
+        set srcaddr "ALL_INTERNAL_SUBNETS"
+        set dstaddr "all"
+        set action accept
+        set schedule "always"
+        set service "HTTP" "HTTPS" "DNS" "PING"
+        set nat enable
+    next
+end

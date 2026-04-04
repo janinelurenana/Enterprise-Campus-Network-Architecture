@@ -1,0 +1,231 @@
+! ============================================================
+! Device  : CORE-1
+! Role    : Primary Core/Distribution Switch
+! STP     : Rapid-PVST+ Root Primary (priority 4096)
+! HSRP    : Active for all VLANs (priority 110)
+! Uplinks : FortiGate port2 (primary), FortiGate port3 (cross)
+! ============================================================
+
+hostname CORE-1
+
+!
+! --- Spanning Tree ---
+!
+spanning-tree mode rapid-pvst
+spanning-tree extend system-id
+spanning-tree vlan 1-4094 priority 4096
+
+!
+! --- IP SLA: Monitor primary FortiGate gateway ---
+! Tracks reachability of FG port2 (10.10.255.2).
+! Used to withdraw default route and trigger HSRP priority
+! decrement if the upstream gateway goes down.
+!
+track 10 ip sla 10 reachability
+
+ip sla 10
+ icmp-echo 10.10.255.2 source-interface GigabitEthernet0/0
+ frequency 5
+ip sla schedule 10 life forever start-time now
+
+!
+! --- LACP Inter-Core Backbone ---
+! Bundles physical links to CORE-2 into Port-channel1.
+! Provides backbone redundancy and bandwidth aggregation.
+!
+interface Port-channel1
+ description L2-LACP-INTERLINK-TO-CORE-2
+ switchport trunk encapsulation dot1q
+ switchport mode trunk
+
+interface GigabitEthernet1/0
+ description LACP-MEMBER-TO-CORE-2
+ switchport trunk encapsulation dot1q
+ switchport mode trunk
+ negotiation auto
+ channel-group 1 mode active
+
+!
+! --- Routed Uplinks to FortiGate ---
+! G0/0: Primary path to FG-1 (port2)
+! G2/0: Cross-path to FG-2 (port5) — backup
+! PortFast edge + BPDUGuard: these are routed (no switchport)
+! interfaces; BPDUGuard prevents accidental L2 loop if
+! a switch is ever connected here by mistake.
+!
+interface GigabitEthernet0/0
+ description PRIMARY-UPLINK-TO-FG1-PORT2
+ no switchport
+ ip address 10.10.255.1 255.255.255.252
+ negotiation auto
+ spanning-tree portfast edge trunk
+ spanning-tree bpduguard enable
+
+interface GigabitEthernet2/0
+ description CROSS-UPLINK-TO-FG2-PORT5
+ no switchport
+ ip address 10.10.255.9 255.255.255.252
+ negotiation auto
+ spanning-tree portfast edge trunk
+ spanning-tree bpduguard enable
+
+!
+! --- Access Layer Trunks ---
+! VLAN pruning: each trunk carries only the VLANs
+! required by the connected access switch.
+!
+interface GigabitEthernet0/1
+ description TRUNK-TO-ACC-1
+ switchport trunk allowed vlan 20,40
+ switchport trunk encapsulation dot1q
+ switchport mode trunk
+ negotiation auto
+
+interface GigabitEthernet0/2
+ description TRUNK-TO-ACC-2
+ switchport trunk allowed vlan 30
+ switchport trunk encapsulation dot1q
+ switchport mode trunk
+ negotiation auto
+
+interface GigabitEthernet0/3
+ description TRUNK-TO-ACC-3
+ switchport trunk allowed vlan 10
+ switchport trunk encapsulation dot1q
+ switchport mode trunk
+ negotiation auto
+
+!
+! --- SVIs and HSRP ---
+! CORE-1 is HSRP active for all VLANs (priority 110 > default 100).
+! Preempt delay: 60s prevents flapping during restart.
+! Track 10: decrement 25 if FG gateway unreachable.
+!   Normal priority: 110 → triggers failover to CORE-2 (100)
+!   when upstream path fails, even if CORE-1 itself is up.
+!
+
+interface Vlan10
+ description IT-VLAN-GW
+ ip address 10.10.10.2 255.255.255.0
+ ip access-group ACL_IT_IN in
+ standby 10 ip 10.10.10.1
+ standby 10 priority 110
+ standby 10 preempt delay minimum 60
+ standby 10 track 10 decrement 25
+
+interface Vlan20
+ description MGMT-VLAN-GW
+ ip address 10.10.20.2 255.255.255.0
+ ip access-group ACL_MGMT_IN in
+ standby 20 ip 10.10.20.1
+ standby 20 priority 110
+ standby 20 preempt delay minimum 60
+ standby 20 track 10 decrement 25
+
+interface Vlan30
+ description HR-VLAN-GW
+ ip address 10.10.30.2 255.255.255.0
+ ip access-group ACL_HR_IN in
+ standby 30 ip 10.10.30.1
+ standby 30 priority 110
+ standby 30 preempt delay minimum 60
+ standby 30 track 10 decrement 25
+
+interface Vlan40
+ description GUEST-VLAN-GW
+ ip address 10.10.40.2 255.255.255.0
+ ip access-group ACL_GUEST_IN in
+ standby 40 ip 10.10.40.1
+ standby 40 priority 110
+ standby 40 preempt delay minimum 60
+ standby 40 track 10 decrement 25
+
+!
+! --- Static Routing ---
+! Primary default route via FG-1 (tracked — withdraws if FG unreachable).
+! Floating default via FG-1 (untracked, AD 1) retained as last resort.
+! Backup default via FG-2 cross-link (AD 20).
+! Internal summary routes to both FG uplinks ensure return
+! traffic can reach any 10.10.x.x host regardless of active FW.
+! /30 host routes for each transit link provide explicit
+! next-hop reachability for management and SLA probes.
+!
+ip route 0.0.0.0 0.0.0.0 10.10.255.2 track 10
+ip route 0.0.0.0 0.0.0.0 10.10.255.2
+ip route 0.0.0.0 0.0.0.0 10.10.255.10 20
+ip route 10.10.0.0 255.255.0.0 10.10.255.2
+ip route 10.10.0.0 255.255.0.0 10.10.255.10
+ip route 10.10.255.0 255.255.255.252 10.10.255.2
+ip route 10.10.255.4 255.255.255.252 10.10.255.6
+ip route 10.10.255.8 255.255.255.252 10.10.255.10
+ip route 10.10.255.12 255.255.255.252 10.10.255.14
+
+!
+! --- SSH Hardening ---
+! Legacy ciphers (CBC, RC4) disabled. CTR-mode AES only.
+!
+ip ssh server algorithm encryption aes128-ctr aes192-ctr aes256-ctr
+ip ssh client algorithm encryption aes128-ctr aes192-ctr aes256-ctr
+
+!
+! --- ACLs ---
+! Applied inbound on SVIs. Stateless — return traffic is
+! explicitly permitted at the top of each list.
+! Final implicit deny is made explicit for logging clarity.
+!
+! Policy summary:
+!   IT       → Management, HR, Internet: PERMIT
+!   IT       → Guest: DENY
+!   Management → HR, Internet: PERMIT
+!   Management → IT, Guest: DENY
+!   HR       → Internet: PERMIT
+!   HR       → IT, Management, Guest: DENY
+!   Guest    → Internet: PERMIT
+!   Guest    → All internal (10.10.0.0/16): DENY
+!
+
+ip access-list extended ACL_IT_IN
+ remark --- Return traffic ---
+ permit icmp any any echo-reply
+ permit tcp any any established
+ remark --- Deny IT to Guest ---
+ deny   ip 10.10.10.0 0.0.0.255 10.10.40.0 0.0.0.255 log
+ remark --- Permit IT to internal and internet ---
+ permit ip 10.10.10.0 0.0.0.255 10.10.20.0 0.0.0.255
+ permit ip 10.10.10.0 0.0.0.255 10.10.30.0 0.0.0.255
+ permit ip 10.10.10.0 0.0.0.255 any
+ deny   ip any any log
+
+ip access-list extended ACL_MGMT_IN
+ remark --- Return traffic ---
+ permit icmp any any echo-reply
+ permit tcp any any established
+ remark --- Deny Management to IT and Guest ---
+ deny   ip 10.10.20.0 0.0.0.255 10.10.10.0 0.0.0.255 log
+ deny   ip 10.10.20.0 0.0.0.255 10.10.40.0 0.0.0.255 log
+ remark --- Permit Management to HR and internet ---
+ permit ip 10.10.20.0 0.0.0.255 10.10.30.0 0.0.0.255
+ permit ip 10.10.20.0 0.0.0.255 any
+ deny   ip any any log
+
+ip access-list extended ACL_HR_IN
+ remark --- Return traffic ---
+ permit icmp any any echo-reply
+ permit tcp any any established
+ remark --- Deny HR to all other internal VLANs ---
+ deny   ip 10.10.30.0 0.0.0.255 10.10.10.0 0.0.0.255 log
+ deny   ip 10.10.30.0 0.0.0.255 10.10.20.0 0.0.0.255 log
+ deny   ip 10.10.30.0 0.0.0.255 10.10.40.0 0.0.0.255 log
+ remark --- Permit HR to internet only ---
+ permit ip 10.10.30.0 0.0.0.255 any
+ deny   ip any any log
+
+ip access-list extended ACL_GUEST_IN
+ remark --- Return traffic ---
+ permit icmp any any echo-reply
+ permit tcp any any established
+ remark --- Deny Guest to all internal subnets ---
+ deny   ip 10.10.40.0 0.0.0.255 10.10.0.0 0.0.255.255 log
+ remark --- Permit Guest to internet only ---
+ permit ip 10.10.40.0 0.0.0.255 any
+ deny   ip any any log

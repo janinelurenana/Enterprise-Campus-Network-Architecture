@@ -1,0 +1,52 @@
+! ============================================================
+! Device  : ACC-3  (labeled SW3 / ACC-3 in source configs)
+! Role    : Access Layer Switch — IT VLAN
+! VLANs   : 10 (IT)
+! Uplinks : G0/0 → CORE-1 (primary), G0/3 → CORE-2 (secondary)
+! ============================================================
+
+hostname ACC-3
+
+!
+! --- Spanning Tree ---
+!
+spanning-tree mode pvst
+spanning-tree extend system-id
+
+!
+! --- Uplink Trunks ---
+! Only VLAN 10 is permitted on trunks.
+! IT is the highest-trust VLAN; limiting trunk scope
+! reduces blast radius if this switch is compromised.
+!
+interface GigabitEthernet0/0
+ description PRIMARY-UPLINK-TO-CORE-1
+ switchport trunk allowed vlan 10
+ switchport trunk encapsulation dot1q
+ switchport mode trunk
+ negotiation auto
+
+interface GigabitEthernet0/3
+ description SECONDARY-UPLINK-TO-CORE-2
+ switchport trunk allowed vlan 10
+ switchport trunk encapsulation dot1q
+ switchport mode trunk
+ negotiation auto
+
+!
+! --- Access Ports ---
+!
+
+interface GigabitEthernet0/1
+ description IT-PC1
+ switchport access vlan 10
+ switchport mode access
+ negotiation auto
+ spanning-tree portfast edge
+
+interface GigabitEthernet0/2
+ description IT-PC2
+ switchport access vlan 10
+ switchport mode access
+ negotiation auto
+ spanning-tree portfast edge

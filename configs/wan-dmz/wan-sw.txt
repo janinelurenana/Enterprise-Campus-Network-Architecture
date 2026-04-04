@@ -1,0 +1,42 @@
+! ============================================================
+! Device  : WAN-SW-1
+! Role    : WAN-facing Layer 2 switch
+! Purpose : Connects both FortiGate WAN ports and the ISP
+!           uplink to a shared broadcast domain (VLAN 901).
+!           Acts as a simple L2 aggregation point — no routing,
+!           no STP complexity, no policy.
+! VLAN    : 901 (WAN segment — not routed internally)
+! ============================================================
+!
+! Design note: A dedicated WAN switch is used rather than
+! directly connecting ISP to one FG unit. This allows both
+! FG-1 and FG-2 to share the same ISP uplink without requiring
+! ISP-side changes during HA failover. The virtual MAC used
+! by the FortiGate HA cluster ensures the ISP sees a single
+! stable MAC address regardless of which unit is active.
+!
+! CDP is disabled on the ISP-facing port to prevent topology
+! information from leaking to the provider.
+! ============================================================
+
+hostname WAN-SW-1
+
+!
+interface GigabitEthernet0/0
+ description FG-1-WAN-PORT1
+ switchport access vlan 901
+ switchport mode access
+ negotiation auto
+
+interface GigabitEthernet0/1
+ description ISP-UPLINK
+ switchport access vlan 901
+ switchport mode access
+ negotiation auto
+ no cdp enable
+
+interface GigabitEthernet0/2
+ description FG-2-WAN-PORT1
+ switchport access vlan 901
+ switchport mode access
+ negotiation auto

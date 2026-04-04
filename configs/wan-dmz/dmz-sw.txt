@@ -1,0 +1,50 @@
+! ============================================================
+! Device  : DMZ-SW
+! Role    : DMZ-facing Layer 2 switch
+! Purpose : Connects the Nginx web server to the FortiGate
+!           DMZ-facing ports. Provides a shared broadcast
+!           domain for DMZ hosts.
+! VLAN    : 50 (DMZ segment)
+! ============================================================
+!
+! Design note: The DMZ switch has NO uplink to the core
+! switching fabric. It connects only to FortiGate ports.
+! This physical isolation means there is no Layer 2 path
+! from the DMZ to any internal VLAN, regardless of software
+! policy. A misconfigured firewall rule could open a routed
+! path, but not a switched one. This is intentional defense-
+! in-depth — the DMZ isolation does not depend solely on the
+! firewall zone policy.
+!
+! Both FG-1 and FG-2 connect to this switch (G0/0 and G0/1)
+! so that the active FortiGate unit — whichever that is after
+! an HA event — always has Layer 2 reachability to the DMZ.
+!
+! PortFast edge is enabled on all ports because all connected
+! devices are end hosts or firewall interfaces, never switches.
+! This eliminates the 30-second STP delay on port activation.
+! ============================================================
+
+hostname DMZ-SW
+
+!
+interface GigabitEthernet0/0
+ description FG-1-DMZ-PORT
+ switchport access vlan 50
+ switchport mode access
+ negotiation auto
+ spanning-tree portfast edge
+
+interface GigabitEthernet0/1
+ description FG-2-DMZ-PORT
+ switchport access vlan 50
+ switchport mode access
+ negotiation auto
+ spanning-tree portfast edge
+
+interface GigabitEthernet0/2
+ description DMZ-NGINX-SERVER
+ switchport access vlan 50
+ switchport mode access
+ negotiation auto
+ spanning-tree portfast edge
