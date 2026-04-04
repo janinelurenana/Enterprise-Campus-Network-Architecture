@@ -204,8 +204,6 @@ enterprise-campus-network/
 ├── tests/
 │   ├── test-1-hsrp-core-failover/
 │   ├── test-2-firewall-ha-failover/
-│   ├── test-3-stp-uplink-failover/
-│   ├── test-4-dual-failure/
 │   └── connectivity-baseline/
 └── notes/
     ├── iteration-log.md

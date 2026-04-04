@@ -77,51 +77,6 @@ Baseline evidence (show commands, pings, ACL hit counters) is in `/tests/connect
 
 ---
 
-## Test 3 – Access Uplink Failure (Rapid-PVST+)
-
-**Objective:** Verify that when a primary uplink from an access switch to CORE-1 fails, the blocked cross-link to CORE-2 transitions to forwarding without sustained traffic loss.
-
-**Procedure:**
-1. Confirm primary uplinks are forwarding; cross-links are blocking (via `show spanning-tree`)
-2. Start continuous ICMP from a host on the affected access switch
-3. Shut down the primary uplink interface on the access switch
-4. Monitor ICMP for loss duration
-5. Confirm cross-link transitions from blocking to forwarding
-6. Restore the primary link and confirm topology returns to baseline
-
-**Observed Results:**
-- Sub-second reconvergence (fewer than 3 ICMP packets lost)
-- Cross-link transitioned from blocking to forwarding
-- Rapid-PVST+ PortFast/Edge configuration on host ports prevented unnecessary TCN flooding
-- Primary link restoration triggered expected topology recalculation; cross-link returned to blocking
-
-**Evidence:** `/tests/test-3-stp-uplink-failover/`
-
----
-
-## Test 4 – Dual Failure (CORE-1 + Active FortiGate)
-
-**Objective:** Verify that simultaneous failure of CORE-1 and the active FortiGate does not produce a cascading outage — that HSRP and FG HA operate independently and both recover without manual intervention.
-
-**Procedure:**
-1. Confirm CORE-1 is HSRP active; FG-primary is HA active
-2. Start continuous ICMP from an internal host to an external IP
-3. Simultaneously shut down CORE-1 and power off the active FortiGate
-4. Monitor ICMP for total loss duration and recovery
-5. Confirm CORE-2 is HSRP active AND secondary FortiGate is HA active
-
-**Observed Results:**
-- Combined loss was bounded by the slower of the two mechanisms (HSRP, ~5 packets)
-- Both mechanisms recovered independently — no deadlock or dependency observed
-- Traffic resumed without manual intervention
-- CORE-2 routing table remained intact; cross-links to both cores were available
-
-**Key validation:** The IP SLA on CORE-1 monitors the FortiGate gateway. On CORE-1 shutdown, the SLA tracking object was irrelevant — HSRP failover occurred due to interface failure, not gateway reachability. On CORE-2, the IP SLA continued to track the new active FortiGate address without interruption.
-
-**Evidence:** `/tests/test-4-dual-failure/`
-
----
-
 ## ACL Validation
 
 ACL enforcement was validated by testing each deny rule explicitly:
