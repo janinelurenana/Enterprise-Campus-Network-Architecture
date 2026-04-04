@@ -1,7 +1,5 @@
 # Firewall Policy Matrix
 
-**Project:** v3 – Perimeter Hardening & Service Isolation
-
 ---
 
 ## 1. Security Design Objective
