@@ -177,9 +177,11 @@ Full test logs, packet captures, and screenshots are in `/tests/`.
 ```
 enterprise-campus-network/
 ├── README.md
+|
 ├── topology/
 │   ├── logical-topology.png
 │   └── physical-topology.png
+|
 ├── configs/
 │   ├── core/
 │   │   ├── core-1.txt
@@ -194,6 +196,7 @@ enterprise-campus-network/
 │   └── wan-dmz/
 │       ├── wan-sw.txt
 │       └── dmz-sw.txt
+|
 ├── docs/
 │   ├── architecture.md
 │   ├── design-decisions.md
@@ -201,12 +204,15 @@ enterprise-campus-network/
 │   ├── firewall-policy-matrix.md
 │   ├── acl-reference.md
 │   └── threat-model.md
-├── tests/
-│   ├── test-1-hsrp-core-failover/
-│   ├── test-2-firewall-ha-failover/
-│   └── connectivity-baseline/
+|
+├── validation-tests/
+│   ├── ha-redundancy-tests/         # simulated hsrp core and active firewall failover
+│   ├── acl-segmentation-tests/      # validated acl segmentation
+│   └── service availability-tests/  # DMZ web server and HR file server 
+|
 └── notes/
-    ├── iteration-log.md
+    ├── ha-logic-explained.md
+    ├── troubleshooting-log.md
     └── lessons-learned.md
 ```
 
