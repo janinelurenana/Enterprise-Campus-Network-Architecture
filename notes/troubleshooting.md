@@ -1,196 +1,99 @@
-# Troubleshooting Log
+# Troubleshooting Notes
 
-This document captures real failure scenarios encountered during the implementation of High Availability (HA) and Core Redundancy in **v2-resilient-core-edge-ha-firewall**.
-
----
-
-# Case 1: Routing Loop (TTL Expired)
-
-## Symptoms
-
-* End devices (VPCs) unable to reach Internet (e.g., `8.8.8.8`)
-* `tracert` / `mtr` shows packets bouncing between:
-
-  * Core Switch
-  * FortiGate
-* Ping output:
-
-  ```
-  ICMP type: 11, code: 0
-  TTL expired in transit
-  ```
+This document captures real failure scenarios encountered during the implementation of ACL, VLAN Segmentation and Firewall Policy in **v1-segmentation-fabric-vlan-acl-firewall**.
 
 ---
 
-## Topology Context
+## Case 1: ACL Top-Down Rule Processing Issue
 
-* Two Core switches (HSRP enabled)
-* Two FortiGate firewalls (Active/Standby HA)
-* Four /30 transit links between Cores and Firewalls
-* FortiGate WAN (port1) receives default route via DHCP from ISP/Cloud
-* Core switches configured with:
+### Symptom
+Hosts in **VLAN 10 (10.10.10.0/24)** were able to reach **VLAN 40 (10.10.40.0/24)** despite an explicit deny policy intended to block that traffic.
 
-  ```
-  ip route 0.0.0.0 0.0.0.0 <FortiGate-transit-IP>
-  ```
+### Root Cause
+Extended ACLs are evaluated **top-down**, and processing stops at the **first matching rule**.
 
----
-
-## Root Cause Analysis (RCA)
-
-The issue was caused by a **Static Route Conflict**.
-
-### What Happened
-
-The FortiGate was manually configured with a static default route:
-
+The original ACL contained a broad permit statement placed above a more specific deny:
 ```
-0.0.0.0/0 → Core Switch
+permit ip 10.10.10.0 0.0.0.255 any
+deny ip 10.10.10.0 0.0.0.255 10.10.40.0 0.0.0.255 log
 ```
 
-At the same time:
+Traffic destined for VLAN 40 matched the general permit and was allowed before reaching the deny rule.
 
-* Core switches had their own default route:
+### Resolution
+Reordered the ACL so that **specific denies precede general permits**, following least-privilege principles:
+```
+ip access-list extended ACL_IT_IN
+permit icmp any any echo-reply
+permit ip 10.10.10.0 0.0.0.255 10.10.20.0 0.0.0.255
+permit ip 10.10.10.0 0.0.0.255 10.10.30.0 0.0.0.255
+deny ip 10.10.10.0 0.0.0.255 10.10.40.0 0.0.0.255 log
+permit ip 10.10.10.0 0.0.0.255 any
+deny ip any any
+```
 
-  ```
-  0.0.0.0/0 → FortiGate
-  ```
+### Verification
+- Ping attempts from VLAN 10 to VLAN 40 fail with **“Administratively prohibited”**
+- Allowed inter-VLAN traffic functions as intended
+- `show access-lists ACL_IT_IN` confirms hit counters incrementing on the deny rule
 
-This created a bidirectional default route loop.
-
----
-
-## Packet Flow Breakdown
-
-1. VPC sends traffic to default gateway (HSRP VIP on Core).
-2. Core forwards traffic using its default route → FortiGate.
-3. FortiGate matches its static default route → sends traffic back to Core.
-4. Packet loops indefinitely between Core and FortiGate.
-5. TTL decrements to 0.
-6. ICMP Type 11 (TTL expired) returned.
-
-This is a textbook Layer 3 routing loop.
-
----
-
-## Resolution
-
-* Removed manual static default route from FortiGate.
-* Allowed FortiGate to use WAN-learned default route via DHCP.
-* Verified routing table using:
-
-  ```
-  get router info routing-table all
-  ```
-
-After correction:
-
-* Core default → FortiGate
-* FortiGate default → WAN
-
-Loop resolved immediately.
+### Key Takeaway
+ACL behavior is **order-dependent**. Broad permits placed too early can silently bypass security intent. This is a common real-world failure mode when policies grow organically.
 
 ---
 
-## Lesson Learned
+## Case 2: Firewall Policy Correct but Traffic Still Failing
 
-In dual-device edge designs:
+### Symptom
+Internal VLANs could not reach the internet even though:
+- Firewall policies were correctly defined
+- NAT was enabled
+- Policy order appeared correct
 
-* Only one device should own the upstream default route toward the ISP.
-* Transit networks must not be used as fallback default routes unless explicitly required.
-* Always validate routing tables on both ends when troubleshooting loops.
+Ping attempts to external IPs resulted in timeouts.
 
----
+### Root Cause
+Firewall **routing was incomplete**.
 
-# Case 2: Sub-Optimal Path Selection (Full-Mesh Topology)
+While outbound policies existed, the FortiGate lacked a clear return path for internal subnets.  
+Without an explicit route pointing internal networks back to the core L3 switch, return traffic could not be forwarded correctly.
 
-## Symptoms
+Firewall policy evaluation occurs **after routing**, not before.
 
-In a topology with:
+### Resolution
+Added a summarized static route directing all internal VLANs back to the core switch:
 
-* 2 Core Switches
-* 2 FortiGate Firewalls
-* Full-mesh /30 transit links
+```
+config router static
+edit 1
+set dst 10.10.0.0 255.255.0.0
+set gateway 10.10.255.1
+set device "port2"
+next
+end
+```
 
-Traffic occasionally followed a non-direct path:
+This informs the firewall that all internal VLANs reside behind the core L3 device.
 
-Example:
+### Verification
+- Internal VLANs successfully reach the internet
+- `show router info routing-table all` confirms:
+  - Default route via WAN interface
+  - 10.10.0.0/16 route via core-facing interface
+- Firewall logs show sessions correctly established and NAT applied
 
-* Core-1 → FG-2
-  Even though:
-* Core-1 → FG-1 link was healthy.
-
-No outage occurred, but traffic symmetry was inconsistent.
-
----
-
-## Root Cause Analysis (RCA)
-
-FortiOS static routes had:
-
-* Same distance
-* Same priority
-
-When multiple static routes have equal distance and priority, FortiOS may load-balance or select routes unpredictably.
-
-This resulted in asymmetric or sub-optimal forwarding paths.
-
----
-
-## Resolution: Cascading Priority Design
-
-FortiOS uses:
-
-1. Distance (Administrative Distance)
-2. Priority (Tie-breaker)
-3. Interface/ECMP behavior
-
-To enforce deterministic failover behavior, we implemented:
-
-### Cascading Priority
-
-Example:
-
-| Route          | Distance | Priority |
-| -------------- | -------- | -------- |
-| Primary Path   | 10       | 10       |
-| Secondary Path | 10       | 20       |
-| Tertiary Path  | 10       | 30       |
-
-Lower priority value = preferred route.
-
-This creates a strict, ordered failover hierarchy.
+### Key Takeaway
+Firewalls are **routers first, policy engines second**.  
+If routing is incorrect or incomplete, perfectly valid security policies will never be evaluated.
 
 ---
 
-## Result
+## Overall Lesson
+Most network failures are not caused by missing commands, but by **misunderstanding processing order**:
+- Routing before policy
+- ACL order before intent
+- Specific rules before general ones
 
-* Primary path always selected when healthy.
-* Backup path used only when primary fails.
-* Traffic symmetry restored.
-* Predictable behavior under failover conditions.
+This project reinforced the importance of validating control-plane logic before assuming a security misconfiguration.
 
----
 
-## Lesson Learned
-
-In redundant, full-mesh topologies:
-
-* Equal-cost static routes can create non-deterministic behavior.
-* Always explicitly define route priority.
-* Redundancy without control can create instability.
-
----
-
-# Engineering Reflection
-
-These incidents reinforced key architectural principles:
-
-* Redundancy increases complexity.
-* Default routes must be carefully controlled.
-* Deterministic path selection is essential in multi-link topologies.
-* Always verify actual forwarding behavior — not just interface status.
-
-High Availability is not achieved by adding devices.
-
-It is achieved by controlling behavior under failure.
