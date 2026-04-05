@@ -16,12 +16,16 @@
 # port4  : Link to CORE-2 G0/0  (10.10.255.6/30)  [cross FG-2 path]
 # port5  : Link to CORE-1 G2/0  (10.10.255.14/30)
 # port8  : HA heartbeat link (dedicated, not routed)
+# port9  : DMZ-SW uplink (10.10.50.1/24) — gateway for VLAN 50
 #
+# Both FG-1 and FG-2 connect to DMZ-SW on port9, so the active
+# firewall always has L2 reachability to the DMZ regardless of
+# which unit is active after an HA failover event.
 # Cross-links (port3, port4) provide backup routing paths
 # if primary adjacencies to CORE-1 or CORE-2 go down.
-# Monitored interfaces: port2, port3, port4, port5.
+# Monitored interfaces: port2, port3, port4, port5, port9.
 # Any monitored interface failure triggers HA failover if
-# the secondary unit has all four interfaces up.
+# the secondary unit has all five interfaces up.
 # ------------------------------------------------------------
 
 config system interface
@@ -66,6 +70,14 @@ config system interface
         set description "Cross-Link-to-CORE-1-G2/0"
         set snmp-index 5
     next
+    edit "port9"
+        set vdom "root"
+        set ip 10.10.50.1 255.255.255.0
+        set allowaccess ping
+        set type physical
+        set description "DMZ-SW-uplink"
+        set snmp-index 9
+    next
 end
 
 
@@ -96,7 +108,7 @@ config system ha
     set link-failed-signal enable
     set override enable
     set priority 200
-    set monitor "port2" "port3" "port4" "port5"
+    set monitor "port2" "port3" "port4" "port5" "port9"
 end
 
 
@@ -107,6 +119,11 @@ end
 # Using a zone rather than individual interface references
 # means policy rules apply to all internal links automatically,
 # including cross-links used during failover scenarios.
+# ZONE_DMZ isolates port9 (DMZ-SW uplink) from both the
+# internal zone and WAN. Traffic between ZONE_DMZ and
+# ZONE_INTERNAL is denied by explicit policy. The only
+# permitted path into the DMZ is from ZONE_WAN (inbound
+# HTTP/HTTPS to the Nginx server).
 # ------------------------------------------------------------
 
 config system zone
@@ -115,6 +132,9 @@ config system zone
     next
     edit "ZONE_WAN"
         set interface "port1"
+    next
+    edit "ZONE_DMZ"
+        set interface "port9"
     next
 end
 
@@ -184,6 +204,7 @@ config firewall address
         set subnet 10.10.40.0 255.255.255.0
     next
     edit "DMZ_SUBNET"
+        set uuid 3c910438-0bcf-51f1-9f6a-44f8be747a4c
         set subnet 10.10.50.0 255.255.255.0
     next
 end
@@ -196,33 +217,77 @@ end
 
 
 # ------------------------------------------------------------
+# Virtual IPs (VIPs) — Destination NAT for DMZ inbound
+# ------------------------------------------------------------
+# VIPs map the public WAN IP on port1 to the Nginx server's
+# private DMZ address (10.10.50.10) for ports 80 and 443.
+# These are referenced in policy 10 (WAN_to_DMZ_WEB) as
+# destination address objects — the policy match and DNAT
+# translation happen simultaneously when a VIP is the dstaddr.
+# nat disable on the policy is correct here because the VIP
+# already handles the address translation; enabling NAT on the
+# policy would additionally source-NAT the packet, which would
+# break the server's ability to see the real client IP.
+# ------------------------------------------------------------
+
+config firewall vip
+    edit "VIP-WEB-HTTP"
+        set uuid 1f682b38-0bd5-51f1-d4bc-967418a2918a
+        set mappedip "10.10.50.10"
+        set extintf "port1"
+        set portforward enable
+        set extport 80
+        set mappedport 80
+    next
+    edit "VIP-WEB-HTTPS"
+        set uuid 1f7bcfc6-0bd5-51f1-b9eb-887bb51b76ad
+        set mappedip "10.10.50.10"
+        set extintf "port1"
+        set portforward enable
+        set extport 443
+        set mappedport 443
+    next
+end
+
+
+# ------------------------------------------------------------
 # Firewall Policy
 # ------------------------------------------------------------
-# Policy order matters — FortiGate evaluates top-down,
-# first match wins.
+# FortiGate evaluates policies top-down, first match wins.
+# Policy IDs control evaluation order — lower ID is not
+# necessarily evaluated first; only the sequence in this
+# config block determines order.
 #
 # Policy 5  (GUEST_to_INTERNAL_DENY):
-#   Second enforcement layer for Guest isolation.
-#   ACLs on the core enforce this too, but the firewall
-#   provides an independent control point. logtraffic all
-#   captures every attempt for audit purposes.
-#   Action field is omitted (implicit deny — no set action = deny).
+#   Redundant east-west deny. Primary enforcement is at the
+#   core ACLs; this provides an independent second layer.
+#   No action field = implicit deny. logtraffic all for audit.
 #
-# Policy 10 (WAN_to_DMZ):
-#   Allows inbound HTTP/HTTPS from WAN to the DMZ web server.
-#   No NAT required — DMZ has a routable address in the
-#   design; destination NAT (VIP) would be added in production
-#   if the DMZ server uses a private IP behind a public VIP.
+# Policy 11 (BLOCK_DMZ_TO_INTERNAL):
+#   Explicit deny from DMZ to all internal VLANs. Prevents
+#   a compromised DMZ host from pivoting inward. srcaddr "all"
+#   covers any DMZ host, not just the known Nginx server IP.
 #
-# Policy 20 (DMZ_to_INTERNAL_DENY):
-#   Explicit deny from DMZ to internal. Prevents pivoting
-#   from a compromised DMZ host to internal VLANs.
+# Policy 12 (WAN_TO_INTERNAL_DENY):
+#   Belt-and-suspenders block of direct WAN→internal traffic.
+#   The implicit deny would catch this too, but explicit policy
+#   ensures logging and documents intent clearly.
+#
+# Policy 10 (WAN_to_DMZ_WEB):
+#   Permits inbound HTTP/HTTPS from WAN to the DMZ web server.
+#   dstaddr references VIP objects — FortiGate performs DNAT
+#   (10.10.50.10) as part of matching this policy.
+#   nat disable: VIP handles translation; policy NAT would
+#   additionally source-NAT and hide the real client IP.
 #
 # Policy 1  (INTERNAL_to_WAN):
-#   Outbound internet access for all internal VLANs.
-#   Service restricted to HTTP, HTTPS, DNS, PING only —
-#   no blanket "any" outbound. NAT masquerades internal
-#   IPs behind the WAN interface address.
+#   Outbound internet for all internal VLANs. Service-restricted
+#   to HTTP, HTTPS, DNS, PING — no blanket "any". SNAT applied.
+#
+# Policy 9  (DMZ_to_Internet):
+#   Permits the DMZ server to reach the internet for DNS,
+#   HTTPS (package updates, OCSP), and PING. Restricted to
+#   outbound-only services; DMZ cannot initiate TCP to internal.
 # ------------------------------------------------------------
 
 config firewall policy
@@ -236,30 +301,41 @@ config firewall policy
         set schedule "always"
         set service "ALL"
         set logtraffic all
-        set comments "Redundant deny — primary enforcement is at core ACLs"
     next
-    edit 10
-        set name "WAN_to_DMZ"
+    edit 11
+        set name "BLOCK_DMZ_TO_INTERNAL"
+        set uuid 82581a7e-0bcf-51f1-6ea2-df94887b0db0
+        set srcintf "ZONE_DMZ"
+        set dstintf "ZONE_INTERNAL"
+        set srcaddr "all"
+        set dstaddr "all"
+        set action deny
+        set schedule "always"
+        set service "ALL"
+        set logtraffic all
+    next
+    edit 12
+        set name "WAN_to_INTERNAL_DENY"
         set srcintf "ZONE_WAN"
         set dstintf "ZONE_INTERNAL"
         set srcaddr "all"
-        set dstaddr "DMZ_SUBNET"
+        set dstaddr "ALL_INTERNAL_SUBNETS"
+        set action deny
+        set schedule "always"
+        set service "ALL"
+        set logtraffic all
+    next
+    edit 10
+        set name "WAN_to_DMZ_WEB"
+        set srcintf "ZONE_WAN"
+        set dstintf "ZONE_DMZ"
+        set srcaddr "all"
+        set dstaddr "VIP-WEB-HTTP" "VIP-WEB-HTTPS"
         set action accept
         set schedule "always"
         set service "HTTP" "HTTPS"
         set logtraffic all
-        set comments "Public web access to DMZ Nginx server"
-    next
-    edit 20
-        set name "DMZ_to_INTERNAL_DENY"
-        set srcintf "ZONE_INTERNAL"
-        set dstintf "ZONE_INTERNAL"
-        set srcaddr "DMZ_SUBNET"
-        set dstaddr "ALL_INTERNAL_SUBNETS"
-        set schedule "always"
-        set service "ALL"
-        set logtraffic all
-        set comments "Prevent DMZ pivot to internal VLANs"
+        set nat disable
     next
     edit 1
         set name "INTERNAL_to_WAN"
@@ -271,7 +347,19 @@ config firewall policy
         set schedule "always"
         set service "HTTP" "HTTPS" "DNS" "PING"
         set nat enable
-        set comments "Outbound internet — restricted services + NAT"
+        set logtraffic all
+    next
+    edit 9
+        set name "DMZ_to_Internet"
+        set uuid 7da5f3fc-0bcf-51f1-e4ed-0c7a8e87ca46
+        set srcintf "ZONE_DMZ"
+        set dstintf "ZONE_WAN"
+        set srcaddr "all"
+        set dstaddr "all"
+        set action accept
+        set schedule "always"
+        set service "DNS" "HTTPS" "PING"
+        set nat enable
     next
 end
 
