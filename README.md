@@ -18,24 +18,11 @@ The design reflects several operational priorities: deterministic traffic paths,
 
 ## Architecture
 
-### Logical Topology
+### Topology Diagram
 
-```
-[ISP / WAN]
-     |
-[WAN Switch]
-     |
-[FortiGate HA Cluster]  ← Active-Passive, session sync enabled
-   /    \
-  /      \
-[CORE-1]──[CORE-2]   ← LACP Port-Channel interlink, Rapid-PVST+, HSRP
-  |  \ / |
-  |   X  |            ← "X-mesh" cross-links to access layer
-  |  / \ |
-[ACC-1][ACC-2][ACC-3]  ← Layer 2 only, VLAN pruned trunks
+![Network Topology Diagram](/toplogy/topology.png)
 
-[DMZ Switch] ← Connected directly to FortiGate, isolated from core
-```
+---
 
 ### Functional Layers
 
