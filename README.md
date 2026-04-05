@@ -166,8 +166,7 @@ enterprise-campus-network/
 ├── README.md
 |
 ├── topology/
-│   ├── logical-topology.png
-│   └── physical-topology.png
+│   └── topology.png
 |
 ├── configs/
 │   ├── core/
