@@ -112,7 +112,7 @@ This document records what broke, what was misunderstood, and what required iter
 
 ---
 
-## 10. Validation Requires Testing the Failure Cases, Not Just the Happy Path
+## 10. Validation Requires Testing the Failure Cases
 
 **What happened:** Initial testing confirmed that permitted traffic flowed correctly — IT could reach HR, Management could reach the internet, Guest could ping external IPs. The project was nearly considered complete before realizing that none of the denied traffic had been explicitly tested. When it was, two of the deny rules were found to be ineffective due to rule ordering issues caught from lesson 1.
 
