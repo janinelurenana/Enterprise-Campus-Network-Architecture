@@ -20,7 +20,7 @@ The design reflects several operational priorities: deterministic traffic paths,
 
 ### Topology Diagram
 
-![Network Topology Diagram](/toplogy/topology.png)
+![Network Topology Diagram](/topology/topology.png)
 
 ---
 
